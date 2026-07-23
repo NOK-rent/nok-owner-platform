@@ -64,6 +64,7 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
     { label: 'Calendario', href: `/dashboard/${activePropertyId}/calendar` },
     { label: 'Reservas',   href: `/dashboard/${activePropertyId}/reservations` },
     { label: 'Reseñas',    href: `/dashboard/${activePropertyId}/reviews` },
+    { label: 'Revenue',    href: `/dashboard/${activePropertyId}/revenue` },
     { label: 'NOK AI',     href: `/dashboard/${activePropertyId}/chat`, ai: true },
   ] : []
   // Always-visible analytics link
