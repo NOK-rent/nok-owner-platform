@@ -72,6 +72,21 @@ export interface StrategyCard {
   text: string
 }
 
+export interface BasePriceBreakdown {
+  recommended: number
+  conservative: number
+  aggressive: number
+  selected: number
+  anchorCredibility: number | null
+  attribution: { label: string; value: number }[]
+}
+
+export interface SeasonRange {
+  name: string
+  start: string // ISO
+  end: string   // ISO
+}
+
 export interface RevenueSnapshot {
   tierName: string | null
   horizonDays: number | null
@@ -84,6 +99,16 @@ export interface RevenueSnapshot {
   strategy: StrategyCard[]
   flags: { name: string; description: string }[]
   autoPosting: boolean
+  // ── deep insights ──
+  basePrice: BasePriceBreakdown | null
+  demandSensitivityPct: number | null
+  pacingAdjusted: boolean
+  historicalAnchoringPct: number | null
+  upcomingSeasons: SeasonRange[]
+  revenueScore30: number | null   // 0-100
+  occRatio30: number | null       // unit occupancy / zone occupancy
+  bookings30: number | null
+  zoneOccDaily: { date: string; occ: number }[] // 0..1, next 60 days
 }
 
 // ── Humanizers ──────────────────────────────────────────────────────────────
@@ -142,6 +167,31 @@ const LM_LABEL: Record<string, string> = {
   REC: 'según lo recomendado por el mercado',
 }
 
+/** base_price_attribution keys → owner-friendly Spanish */
+const ATTR_ES: Record<string, string> = {
+  market_baseline: 'Punto de partida del mercado',
+  bedrooms_bathrooms: 'Habitaciones y baños',
+  room_type: 'Tipo de propiedad',
+  guests: 'Capacidad de huéspedes',
+  location: 'Ubicación exacta',
+  amenities_fees: 'Amenidades y fees',
+  occupancy: 'Ocupación reciente',
+  observed_bookings: 'Historial de reservas',
+}
+
+/** Next occurrence of a yearly date range (shift years until it hasn't ended). */
+function nextYearlyOccurrence(start: string, end: string, today: string): { start: string; end: string } | null {
+  const shift = (iso: string, years: number) => {
+    const [y, m, d] = iso.split('-').map(Number)
+    return `${y + years}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+  }
+  for (let k = 0; k <= 3; k++) {
+    const e = shift(end, k)
+    if (e >= today) return { start: shift(start, k), end: e }
+  }
+  return null
+}
+
 // ── Main loader ─────────────────────────────────────────────────────────────
 
 function isoDaysFromNow(days: number): string {
@@ -155,7 +205,7 @@ export async function getRevenueSnapshot(guestyListingId: string): Promise<Reven
   const start = isoDaysFromNow(0)
   const end = isoDaysFromNow(90)
 
-  const [tier, kpis, prefs, lastPosted, nbPricing, nbOcc, flags] = await Promise.all([
+  const [tier, kpis, prefs, lastPosted, nbPricing, nbOcc, flags, baseRec] = await Promise.all([
     whFetch<{ name: string; horizon: number }>(`/listings/${guestyListingId}/pricing_tier?${q}`),
     whFetch<any>(`/listings/${guestyListingId}/kpis?${q}`),
     whFetch<any>(`/preferences/${guestyListingId}?${q}`),
@@ -163,6 +213,7 @@ export async function getRevenueSnapshot(guestyListingId: string): Promise<Reven
     whFetch<{ data: any[]; currency: string }>(`/listings/${guestyListingId}/neighborhood/pricing?${q}&start_date=${start}&end_date=${end}`),
     whFetch<{ data: any[] }>(`/listings/${guestyListingId}/neighborhood/occupancy?${q}&start_date=${start}&end_date=${end}`),
     whFetch<{ name: string; description: string }[]>(`/listings/${guestyListingId}/flags?${q}`),
+    whFetch<any>(`/listings/${guestyListingId}/base_price_recommendation?${q}`),
   ])
 
   // If the core listing data is missing, the property isn't in Wheelhouse (or API down)
@@ -243,6 +294,48 @@ export async function getRevenueSnapshot(guestyListingId: string): Promise<Reven
 
   const today = isoDaysFromNow(0)
 
+  // ── Deep insights ──
+  const basePrice: BasePriceBreakdown | null = baseRec && typeof baseRec.base_price_recommended === 'number'
+    ? {
+        recommended: baseRec.base_price_recommended,
+        conservative: baseRec.base_price_conservative,
+        aggressive: baseRec.base_price_aggressive,
+        selected: baseRec.base_price_selected,
+        anchorCredibility: typeof baseRec.anchor_credibility === 'number' ? Math.round(baseRec.anchor_credibility) : null,
+        attribution: Object.entries(baseRec.base_price_attribution ?? {})
+          .filter(([, v]) => typeof v === 'number')
+          .map(([k, v]) => ({ label: ATTR_ES[k] ?? k, value: v as number })),
+      }
+    : null
+
+  const globalRule = (rules: any) =>
+    Array.isArray(rules) ? rules.find((r: any) => r.type === 'global')?.value : undefined
+  const demandVal = globalRule(prefs?.demand_sensitivity_rules)
+  const anchorVal = globalRule(prefs?.historical_anchoring_rules)
+
+  const upcomingSeasons: SeasonRange[] = (prefs?.custom_date_ranges ?? [])
+    .flatMap((r: any) => {
+      if (!r?.name || !Array.isArray(r.date_ranges)) return []
+      return r.date_ranges
+        .map((dr: any) => (r.yearly ? nextYearlyOccurrence(dr.start_date, dr.end_date, today) : (dr.end_date >= today ? { start: dr.start_date, end: dr.end_date } : null)))
+        .filter(Boolean)
+        .map((dr: any) => ({ name: String(r.name).trim(), start: dr.start, end: dr.end }))
+    })
+    .sort((a: SeasonRange, b: SeasonRange) => a.start.localeCompare(b.start))
+    .filter((s: SeasonRange, i: number, arr: SeasonRange[]) =>
+      arr.findIndex(x => x.name === s.name || (x.start === s.start && x.end === s.end)) === i)
+    .slice(0, 4)
+
+  const occRatio30 =
+    typeof kpis?.occupancy_adjusted?.['0_30'] === 'number' && typeof kpis?.occupancy_neighborhood_adjusted?.['0_30'] === 'number' && kpis.occupancy_neighborhood_adjusted['0_30'] > 0
+      ? kpis.occupancy_adjusted['0_30'] / kpis.occupancy_neighborhood_adjusted['0_30']
+      : null
+
+  const zoneOccDaily = (nbOcc?.data ?? []).slice(0, 60).map((d: any) => ({
+    date: d.stay_date as string,
+    occ: (typeof d.adjusted_occupancy === 'number' ? d.adjusted_occupancy : d.occupancy) as number,
+  })).filter((d: any) => typeof d.occ === 'number')
+
   return {
     tierName: tier?.name ?? null,
     horizonDays: horizon,
@@ -255,5 +348,14 @@ export async function getRevenueSnapshot(guestyListingId: string): Promise<Reven
     strategy,
     flags: Array.isArray(flags) ? flags : [],
     autoPosting: prefs?.automatic_rate_posting_enabled !== false,
+    basePrice,
+    demandSensitivityPct: typeof demandVal === 'number' ? demandVal : null,
+    pacingAdjusted: prefs?.occupancy_pacing?.adjusted === true,
+    historicalAnchoringPct: typeof anchorVal === 'number' ? anchorVal : null,
+    upcomingSeasons,
+    revenueScore30: typeof kpis?.revenue_score?.['0_30'] === 'number' ? kpis.revenue_score['0_30'] : null,
+    occRatio30,
+    bookings30: typeof kpis?.bookings?.['0_30'] === 'number' ? kpis.bookings['0_30'] : null,
+    zoneOccDaily,
   }
 }
