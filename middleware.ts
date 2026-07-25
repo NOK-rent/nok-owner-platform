@@ -28,8 +28,8 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
-  // Public paths that don't require auth
-  const publicPaths = ['/login', '/auth/callback', '/onboarding', '/admin', '/api/onboarding', '/apt-setup', '/api/apt-setup', '/api/sync-reviews', '/api/cron', '/api/owners', '/api/webhooks']
+  // Public paths that don't require auth (incl. assets PWA: manifest, service worker, offline)
+  const publicPaths = ['/login', '/auth/callback', '/onboarding', '/admin', '/api/onboarding', '/apt-setup', '/api/apt-setup', '/api/sync-reviews', '/api/cron', '/api/owners', '/api/webhooks', '/manifest.webmanifest', '/sw.js', '/offline']
   const isPublic = publicPaths.some((p) => pathname.startsWith(p))
 
   // Redirect while PRESERVING the auth cookies Supabase just refreshed on
