@@ -163,14 +163,18 @@ export default function EquipoClient({ ownerName, properties, initialTickets, no
 
   const activeTicket = tickets.find(t => t.id === activeId) ?? null
 
+  const threadReqRef = useRef(0)
   const loadThread = useCallback(async (id: string) => {
+    const seq = ++threadReqRef.current
     setLoadingThread(true)
     try {
       const res = await fetch(`/api/soporte/tickets/${id}`)
       const data = await res.json()
+      // Descarta respuestas stale: solo aplica si sigue siendo el último request
+      if (seq !== threadReqRef.current) return
       if (res.ok) setEvents(data.events ?? [])
     } finally {
-      setLoadingThread(false)
+      if (seq === threadReqRef.current) setLoadingThread(false)
     }
   }, [])
 

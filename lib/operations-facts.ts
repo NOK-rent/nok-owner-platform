@@ -37,23 +37,29 @@ async function countHostMessages(sb: any, propertyId: string, monthStart: string
       .limit(15)
 
     let total = 0
+    let partial = false // si alguna llamada a Guesty falló, el conteo está incompleto
     for (const r of monthRes ?? []) {
       try {
         const resp = await fetch(`${G}/reservations/${r.guesty_reservation_id}?fields=conversationId`, { headers: H, cache: 'no-store' })
-        if (!resp.ok) continue
+        if (resp.status === 429) { partial = true; break }
+        if (!resp.ok) { partial = true; continue }
         const { conversationId } = await resp.json()
         if (!conversationId) continue
         const pResp = await fetch(`${G}/communication/conversations/${conversationId}/posts?limit=100`, { headers: H, cache: 'no-store' })
-        if (!pResp.ok) continue
+        if (pResp.status === 429) { partial = true; break }
+        if (!pResp.ok) { partial = true; continue }
         const pData = await pResp.json()
         const posts = pData.data?.posts || pData.posts || (Array.isArray(pData.data) ? pData.data : [])
         total += posts.filter((p: any) =>
           p.sentBy === 'host' && p.createdAt >= monthStart && p.createdAt < monthEndExclusive
         ).length
-      } catch { /* una conversación caída no tumba el conteo */ }
+      } catch { partial = true }
       await new Promise(res => setTimeout(res, 150))
     }
 
+    // Solo cachear (24h) un conteo COMPLETO. Si hubo fallos/429, devolver null sin cachear
+    // para reintentar en la próxima visita (evita clavar un 0 o parcial por 24h).
+    if (partial) return null
     await sb.from('system_cache').upsert({
       key: cacheKey,
       value: String(total),

@@ -35,5 +35,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     .in('event_type', OWNER_VISIBLE_EVENTS)
     .order('created_at', { ascending: true })
 
-  return NextResponse.json({ ticket, events: events ?? [] })
+  // Firma los adjuntos (bucket privado) — 1h para la vista en portal
+  const { signAttachments } = await import('@/lib/soporte')
+  const signed = await Promise.all((events ?? []).map(async (e: any) => {
+    const atts = e.metadata?.attachments
+    if (!Array.isArray(atts)) return e
+    return { ...e, metadata: { ...e.metadata, attachments: await signAttachments(sb, atts, 3600) } }
+  }))
+
+  return NextResponse.json({ ticket, events: signed })
 }

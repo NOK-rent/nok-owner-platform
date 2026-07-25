@@ -36,9 +36,27 @@ export interface Classification {
 
 export interface TicketAttachment {
   name: string
-  url: string
+  path: string          // ruta en el bucket privado (fuente de verdad)
+  url?: string          // URL firmada de corta vida, generada al leer/enviar
   type: string
   size: number
+}
+
+const BUCKET = 'soporte-adjuntos'
+
+/** Firma una ruta del bucket privado. In-app: 1h. Email: pasar 7 días. */
+export async function signAttachmentPath(sb: any, path: string, expiresSec = 3600): Promise<string | null> {
+  if (!path) return null
+  // Compat: si viniera una URL pública vieja, extrae la ruta después del nombre del bucket
+  const clean = path.includes(`/${BUCKET}/`) ? path.split(`/${BUCKET}/`)[1].split('?')[0] : path
+  const { data } = await sb.storage.from(BUCKET).createSignedUrl(clean, expiresSec)
+  return data?.signedUrl ?? null
+}
+
+/** Firma un arreglo de adjuntos (rellena .url). */
+export async function signAttachments(sb: any, atts: TicketAttachment[] | null | undefined, expiresSec = 3600): Promise<TicketAttachment[]> {
+  if (!Array.isArray(atts)) return []
+  return Promise.all(atts.map(async a => ({ ...a, url: (await signAttachmentPath(sb, a.path || a.url || '', expiresSec)) ?? undefined })))
 }
 
 export async function classifyMessage(ownerName: string, propertyName: string, message: string): Promise<Classification> {
@@ -243,8 +261,8 @@ export async function uploadAttachments(sb: any, ticketId: string, files: File[]
       upsert: false,
     })
     if (error) throw new Error(`Error subiendo ${file.name}: ${error.message}`)
-    const { data } = sb.storage.from('soporte-adjuntos').getPublicUrl(path)
-    out.push({ name: file.name, url: data.publicUrl, type: file.type, size: file.size })
+    // Guarda la RUTA (bucket privado). La URL se firma al leer/enviar.
+    out.push({ name: file.name, path, type: file.type, size: file.size })
   }
   return out
 }
@@ -304,7 +322,9 @@ export async function createTicketForOwner(opts: {
     }),
   ])
 
-  // Notificación directa por Resend al responsable + copia a owners@nok.rent
+  // Notificación directa por Resend al responsable + copia a owners@nok.rent.
+  // Los adjuntos se firman 7 días para que el link del email funcione al abrirlo.
+  const emailAtts = await signAttachments(sb, attachments, 7 * 24 * 3600)
   const email = buildTeamNotificationEmail({
     kind: 'nueva',
     ticketId: ticket.id,
@@ -314,7 +334,7 @@ export async function createTicketForOwner(opts: {
     ownerName: owner.name,
     apartamento: property.name,
     message,
-    attachments,
+    attachments: emailAtts,
   })
   const emailResult = await sendSoporteEmail({
     to: correoResponsable,

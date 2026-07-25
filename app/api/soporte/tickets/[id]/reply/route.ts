@@ -62,7 +62,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       updated_at: new Date().toISOString(),
     }).eq('id', ticket.id)
 
-    // Notificar al responsable del área (cc owners@)
+    // Notificar al responsable del área (cc owners@) — adjuntos firmados 7d para el email
+    const { signAttachments } = await import('@/lib/soporte')
     const email = buildTeamNotificationEmail({
       kind: 'respuesta',
       ticketId: ticket.id,
@@ -72,7 +73,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       ownerName: owner.name,
       apartamento: ticket.apartamento || '',
       message: message || '(el propietario envió adjuntos)',
-      attachments,
+      attachments: await signAttachments(sb, attachments, 7 * 24 * 3600),
     })
     await sendSoporteEmail({
       to: ticket.correo_responsable || OWNERS_INBOX,

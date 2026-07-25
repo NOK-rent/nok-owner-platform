@@ -81,3 +81,43 @@ export async function copToUSD(copAmount: number): Promise<number> {
   const rate = await getUSDtoCOPRate()
   return copAmount / rate
 }
+
+// ── DOP (peso dominicano) → USD, mismo patrón/caché que COP ──
+const DOP_CACHE_KEY = 'trm_usd_dop'
+let dopMemCache: { rate: number; expiresAt: number } | null = null
+
+export async function getUSDtoDOPRate(): Promise<number> {
+  if (dopMemCache && Date.now() < dopMemCache.expiresAt) return dopMemCache.rate
+  try {
+    const sb = createServiceClient()
+    const { data } = await sb.from('system_cache').select('value, expires_at').eq('key', DOP_CACHE_KEY).single()
+    if (data && new Date(data.expires_at).getTime() > Date.now()) {
+      const rate = parseFloat(data.value)
+      dopMemCache = { rate, expiresAt: new Date(data.expires_at).getTime() }
+      return rate
+    }
+  } catch { /* miss */ }
+  try {
+    const res = await fetch('https://open.er-api.com/v6/latest/USD', { cache: 'no-store' })
+    if (!res.ok) throw new Error(`Exchange rate API ${res.status}`)
+    const data = await res.json()
+    const rate: number = data.rates?.DOP ?? 60 // fallback
+    const expiresAt = new Date(Date.now() + CACHE_TTL_MS).toISOString()
+    dopMemCache = { rate, expiresAt: new Date(expiresAt).getTime() }
+    try {
+      const sb = createServiceClient()
+      await sb.from('system_cache').upsert({ key: DOP_CACHE_KEY, value: String(rate), expires_at: expiresAt })
+    } catch { /* non-critical */ }
+    return rate
+  } catch {
+    return dopMemCache?.rate ?? 60
+  }
+}
+
+/** Convierte cualquier moneda soportada a USD (USD passthrough, COP y DOP con su TRM). */
+export async function toUSDByCurrency(amount: number, currency: string | null | undefined): Promise<number> {
+  const c = (currency || 'USD').toUpperCase()
+  if (c === 'COP') return amount / (await getUSDtoCOPRate())
+  if (c === 'DOP') return amount / (await getUSDtoDOPRate())
+  return amount
+}

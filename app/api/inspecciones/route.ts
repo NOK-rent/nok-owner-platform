@@ -19,5 +19,13 @@ export async function GET() {
     .order('created_at', { ascending: false })
     .limit(100)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ items: data ?? [] })
+
+  // Firma pdf_url (ruta) y fotos (rutas) del bucket privado — 1h
+  const { signAttachmentPath, signAttachments } = await import('@/lib/soporte')
+  const items = await Promise.all((data ?? []).map(async (w: any) => ({
+    ...w,
+    pdf_url: w.pdf_url ? await signAttachmentPath(sb, w.pdf_url, 3600) : null,
+    fotos: Array.isArray(w.fotos) ? await signAttachments(sb, w.fotos, 3600) : w.fotos,
+  })))
+  return NextResponse.json({ items })
 }

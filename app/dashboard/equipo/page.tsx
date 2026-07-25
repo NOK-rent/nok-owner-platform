@@ -51,13 +51,25 @@ export default async function EquipoPage() {
     monthKey,
   )
 
+  // Firma los adjuntos del bucket privado antes de pasarlos al cliente (1h)
+  const { signAttachments, signAttachmentPath } = await import('@/lib/soporte')
+  const notifications = await Promise.all(((notificationsRes.data ?? []) as any[]).map(async n => ({
+    ...n,
+    attachments: Array.isArray(n.attachments) ? await signAttachments(sb, n.attachments, 3600) : n.attachments,
+  })))
+  const workItems = await Promise.all(((workItemsRes.data ?? []) as any[]).map(async w => ({
+    ...w,
+    pdf_url: w.pdf_url ? await signAttachmentPath(sb, w.pdf_url, 3600) : null,
+    fotos: Array.isArray(w.fotos) ? await signAttachments(sb, w.fotos, 3600) : w.fotos,
+  })))
+
   return (
     <EquipoClient
       ownerName={owner.name}
       properties={propertiesRes.data ?? []}
       initialTickets={ticketsRes.data ?? []}
-      notifications={notificationsRes.data ?? []}
-      initialWorkItems={workItemsRes.data ?? []}
+      notifications={notifications}
+      initialWorkItems={workItems}
       opsFacts={opsFacts}
     />
   )

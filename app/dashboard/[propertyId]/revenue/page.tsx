@@ -26,11 +26,10 @@ function fmtPct01(v: number | null) {
 
 const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-// Idioma del render actual (server component — se setea al inicio de la página)
-let EN = false
-function fmtDay(iso: string) {
+// Idioma pasado por parámetro — NUNCA módulo-level (se pisaría entre requests concurrentes)
+function fmtDay(iso: string, en: boolean) {
   const [, m, d] = iso.split('-')
-  return EN ? `${MONTHS_SHORT[+m - 1]} ${+d}` : `${+d} ${MESES_CORTOS[+m - 1]}`
+  return en ? `${MONTHS_SHORT[+m - 1]} ${+d}` : `${+d} ${MESES_CORTOS[+m - 1]}`
 }
 
 /** Known Wheelhouse flags → owner-friendly Spanish */
@@ -84,7 +83,7 @@ function MarketHistogram({ mp }: { mp: MarketPosition }) {
 
 // ── Server-rendered SVG: base price recommendation vs applied over time ─────
 
-function BaseHistoryChart({ points }: { points: BasePriceHistoryPoint[] }) {
+function BaseHistoryChart({ points, en }: { points: BasePriceHistoryPoint[]; en: boolean }) {
   const pts = points.slice(-60)
   if (pts.length < 5) return null
   const W = 420, H = 170, P = { t: 10, r: 10, b: 22, l: 40 }
@@ -104,7 +103,7 @@ function BaseHistoryChart({ points }: { points: BasePriceHistoryPoint[] }) {
         </g>
       ))}
       {[0, Math.floor(pts.length / 2), pts.length - 1].map(i => (
-        <text key={i} x={x(i)} y={H - 6} textAnchor={i === 0 ? 'start' : i === pts.length - 1 ? 'end' : 'middle'} fontSize={10} fill="rgba(26,26,26,0.35)">{fmtDay(pts[i].date)}</text>
+        <text key={i} x={x(i)} y={H - 6} textAnchor={i === 0 ? 'start' : i === pts.length - 1 ? 'end' : 'middle'} fontSize={10} fill="rgba(26,26,26,0.35)">{fmtDay(pts[i].date, en)}</text>
       ))}
       <path d={line('recommended')} fill="none" stroke="#0080C6" strokeWidth={1.8} strokeDasharray="5 4" strokeLinejoin="round" />
       <path d={line('applied')} fill="none" stroke="#0E6845" strokeWidth={2.2} strokeLinejoin="round" />
@@ -145,15 +144,15 @@ function BaseBreakdown({ bp }: { bp: BasePriceBreakdown }) {
 }
 
 const MESES_LARGOS = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
-function fmtRange(s: SeasonRange) {
+function fmtRange(s: SeasonRange, en: boolean) {
   const f = (iso: string) => {
     const [, m, d] = iso.split('-')
-    return EN ? `${MONTHS_SHORT[+m - 1]} ${+d}` : `${+d} ${MESES_LARGOS[+m - 1].slice(0, 3)}`
+    return en ? `${MONTHS_SHORT[+m - 1]} ${+d}` : `${+d} ${MESES_LARGOS[+m - 1].slice(0, 3)}`
   }
   return `${f(s.start)} – ${f(s.end)}`
 }
 
-function OccCompare({ windows }: { windows: OccWindow[] }) {
+function OccCompare({ windows, en: EN }: { windows: OccWindow[]; en: boolean }) {
   return (
     <div className="space-y-4">
       {windows.map(w => (
@@ -198,7 +197,7 @@ export default async function RevenuePage({ params }: Props) {
   if (!property) notFound()
 
   const locale = await getLocale()
-  EN = locale === 'en'
+  const EN = locale === 'en'
 
   const whRef = resolveWheelhouseRef(property)
   const [snapEs, baseHistory, postingCount7d] = whRef
@@ -344,7 +343,7 @@ export default async function RevenuePage({ params }: Props) {
             <div className="grid lg:grid-cols-2 gap-4 items-start">
               <div className="rounded-2xl p-6 nok-card">
                 <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-4">{EN ? 'Occupancy: your unit vs. the area' : 'Ocupación: tu unidad vs. la zona'}</h2>
-                <OccCompare windows={snap.occWindows} />
+                <OccCompare windows={snap.occWindows} en={EN} />
               </div>
 
               {/* Signals */}
@@ -463,7 +462,7 @@ export default async function RevenuePage({ params }: Props) {
                         ? 'How the engine recommendation has moved, and the base we actually applied.'
                         : 'Cómo se ha movido la recomendación del motor, y la base que realmente aplicamos.'}
                     </p>
-                    <BaseHistoryChart points={baseHistory} />
+                    <BaseHistoryChart points={baseHistory} en={EN} />
                     <div className="flex gap-5 mt-2 text-xs" style={{ color: 'rgba(26,26,26,0.45)' }}>
                       <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-0.5 rounded-full" style={{ backgroundColor: '#0E6845' }} /> {EN ? 'Applied' : 'Aplicado'}</span>
                       <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-0.5 rounded-full border-b border-dashed" style={{ borderColor: '#0080C6' }} /> {EN ? 'Recommended' : 'Recomendado'}</span>
@@ -499,7 +498,7 @@ export default async function RevenuePage({ params }: Props) {
                     return (
                       <div key={i} className="flex items-center justify-between gap-4 py-2.5 text-sm" style={{ borderColor: 'rgba(26,26,26,0.06)' }}>
                         <span style={{ color: 'rgba(26,26,26,0.65)' }}>
-                          {EN ? 'Night of' : 'Noche del'} <span className="font-medium text-[#1A1A1A]">{fmtDay(e.stay_date)}</span>
+                          {EN ? 'Night of' : 'Noche del'} <span className="font-medium text-[#1A1A1A]">{fmtDay(e.stay_date, EN)}</span>
                         </span>
                         <span className="flex items-center gap-2 tabular-nums whitespace-nowrap">
                           <span style={{ color: 'rgba(26,26,26,0.4)' }}>${Math.round(e.old_price ?? 0)}</span>
@@ -508,7 +507,7 @@ export default async function RevenuePage({ params }: Props) {
                           {pct != null && pct !== 0 && (
                             <span className="text-xs" style={{ color: up ? '#0E6845' : '#833B0E' }}>({pct > 0 ? '+' : ''}{pct}%)</span>
                           )}
-                          <span className="text-xs" style={{ color: 'rgba(26,26,26,0.35)' }}>· {fmtDay(String(e.detected_at).slice(0, 10))}</span>
+                          <span className="text-xs" style={{ color: 'rgba(26,26,26,0.35)' }}>· {fmtDay(String(e.detected_at).slice(0, 10), EN)}</span>
                         </span>
                       </div>
                     )
@@ -591,7 +590,7 @@ export default async function RevenuePage({ params }: Props) {
                         {snap.upcomingSeasons.map(s => (
                           <div key={s.name} className="flex items-baseline justify-between gap-2 text-sm">
                             <span className="text-[#1A1A1A]">{s.name}</span>
-                            <span className="text-xs whitespace-nowrap" style={{ color: 'rgba(26,26,26,0.4)' }}>{fmtRange(s)}</span>
+                            <span className="text-xs whitespace-nowrap" style={{ color: 'rgba(26,26,26,0.4)' }}>{fmtRange(s, EN)}</span>
                           </div>
                         ))}
                       </div>

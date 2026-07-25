@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { createServiceClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { copToUSD, getUSDtoCOPRate } from '@/lib/trm'
+import { copToUSD, getUSDtoCOPRate, getUSDtoDOPRate } from '@/lib/trm'
 import SupportForm from '@/components/dashboard/SupportForm'
 import MonthPills from '@/components/dashboard/MonthPills'
 import { loadOwnerProperty } from '@/lib/admin'
@@ -58,9 +58,8 @@ export default async function OverviewPage({ params, searchParams }: Props) {
   const { owner, property, sb } = await loadOwnerProperty(propertyId)
   if (!property) notFound()
 
-  // Derive building name from property.name (e.g. "The Park IV 301" → "The Park IV")
-  const propBuilding = (property.name || '').replace(/\s+\S+$/, '').trim() || property.name || ''
-  const maintOr = `property_id.eq.${propertyId},building.eq.${propBuilding}`
+  // Mantenimiento SOLO de esta unidad — no derivar edificio del nombre (cruzaba costos entre owners).
+
 
   const now       = new Date()
   // Selected month (from ?month=YYYY-MM) or current month
@@ -70,6 +69,7 @@ export default async function OverviewPage({ params, searchParams }: Props) {
   const [selYear, selMonth] = selectedMonthKey.split('-').map(Number)
   const displayYear = now.getFullYear()
   const yearStart = `${displayYear}-01-01`
+  const todayStr = now.toISOString().split('T')[0]
   const monthStart = `${selectedMonthKey}-01`
   const monthEnd   = `${selectedMonthKey}-${String(new Date(selYear, selMonth, 0).getDate()).padStart(2, '0')}`
   const selectedMonthDate = new Date(selYear, selMonth - 1, 1)
@@ -102,14 +102,14 @@ export default async function OverviewPage({ params, searchParams }: Props) {
     sb.from('reservations').select('owner_revenue, nights, currency, check_in, check_out, channel')
       .eq('property_id', propertyId).in('status', ['confirmed', 'checked_in', 'checked_out'])
       .lte('check_in', monthEnd).gt('check_out', monthStart),
-    // Year-to-date reservations for YTD metrics
+    // Year-to-date reservations for YTD metrics (hasta HOY, sin futuro)
     sb.from('reservations').select('owner_revenue, nights, currency, check_in, check_out, channel')
       .eq('property_id', propertyId).in('status', ['confirmed', 'checked_in', 'checked_out'])
-      .gte('check_in', yearStart),
-    // Trailing 12 months for occupancy calculation
+      .gte('check_in', yearStart).lte('check_in', todayStr),
+    // Trailing 12 months for occupancy calculation (solo pasado)
     sb.from('reservations').select('nights, check_in, check_out')
       .eq('property_id', propertyId).in('status', ['confirmed', 'checked_in', 'checked_out'])
-      .gte('check_in', trailing12Start),
+      .gte('check_in', trailing12Start).lte('check_in', todayStr),
     // Utility costs for selected month
     sb.from('utility_costs').select('utility_type, amount, currency, month, reference')
       .eq('property_id', propertyId).eq('month', selectedMonthKey),
@@ -118,10 +118,10 @@ export default async function OverviewPage({ params, searchParams }: Props) {
       .eq('property_id', propertyId).in('month', ytdMonthKeys),
     // Maintenance costs for selected month
     sb.from('maintenance_costs').select('amount, currency, date, type, description, property_id, building')
-      .or(maintOr).gte('date', monthStart).lte('date', monthEnd),
+      .eq('property_id', propertyId).gte('date', monthStart).lte('date', monthEnd),
     // Maintenance costs YTD
     sb.from('maintenance_costs').select('amount, currency, date, property_id, building')
-      .or(maintOr).gte('date', yearStart),
+      .eq('property_id', propertyId).gte('date', yearStart).lte('date', todayStr),
     // Owner-entered direct costs (mortgage, HOA, etc.)
     // Wrap in a catch so the page still renders if the migration hasn't been applied yet.
     sb.from('owner_costs').select('*').eq('property_id', propertyId).then(
@@ -130,10 +130,14 @@ export default async function OverviewPage({ params, searchParams }: Props) {
     ),
   ])
 
-  // Live TRM (cached 24h) — used to convert any COP reservation to USD
-  const trm = await getUSDtoCOPRate()
-  const toUSD = (amount: number, currency: string | null | undefined) =>
-    (currency || 'USD').toUpperCase() === 'COP' ? amount / trm : amount
+  // Live TRM (cached 24h) — convierte COP y DOP a USD
+  const [trm, trmDop] = await Promise.all([getUSDtoCOPRate(), getUSDtoDOPRate()])
+  const toUSD = (amount: number, currency: string | null | undefined) => {
+    const c = (currency || 'USD').toUpperCase()
+    if (c === 'COP') return amount / trm
+    if (c === 'DOP') return amount / trmDop
+    return amount
+  }
 
   const lastCleaning        = cleaningsRes.data
   const upcomingReservations = upcomingRes.data ?? []

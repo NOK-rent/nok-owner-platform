@@ -82,14 +82,18 @@ export default function CalendarView({ propertyId, year, month, reservations, pr
   const pricingMap = new Map<string, PricingDay>()
   for (const p of pricing) pricingMap.set(p.calendar_date, p)
 
+  // Itera fechas como STRING YYYY-MM-DD (sin Date/toISOString: en TZ UTC+ se corría un día)
+  const nextYmd = (ymd: string): string => {
+    const [y, m, d] = ymd.split('-').map(Number)
+    const dt = new Date(Date.UTC(y, m - 1, d + 1))
+    return dt.toISOString().slice(0, 10)
+  }
   const reservationMap = new Map<string, Reservation>()
   for (const r of reservations) {
-    const checkIn  = new Date(r.check_in  + 'T00:00:00')
-    const checkOut = new Date(r.check_out + 'T00:00:00')
-    const current  = new Date(checkIn)
-    while (current < checkOut) {
-      reservationMap.set(current.toISOString().split('T')[0], r)
-      current.setDate(current.getDate() + 1)
+    let cur = r.check_in
+    while (cur < r.check_out) {
+      reservationMap.set(cur, r)
+      cur = nextYmd(cur)
     }
   }
 

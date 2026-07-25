@@ -8,7 +8,7 @@
  * so the owner can see the NOK report first and layer their own costs on top.
  */
 
-import { copToUSD, getUSDtoCOPRate } from '@/lib/trm'
+import { copToUSD, getUSDtoCOPRate, getUSDtoDOPRate } from '@/lib/trm'
 import { costAmountForMonth, type OwnerCostRow } from '@/lib/owner-costs'
 
 export interface OwnerExpenseLine {
@@ -88,10 +88,9 @@ export async function getMonthlyStatement(sb: any, property: any, monthKey: stri
   const monthEnd = `${monthKey}-${String(new Date(selYear, selMonth, 0).getDate()).padStart(2, '0')}`
   const daysInMonth = new Date(selYear, selMonth, 0).getDate()
 
-  const propBuilding = (property.name || '').replace(/\s+\S+$/, '').trim() || property.name || ''
-  const maintOr = `property_id.eq.${property.id},building.eq.${propBuilding}`
-
-  const [monthResRes, checkoutsRes, monthUtilRes, monthMaintRes, ownerCostsRes] = await Promise.all([
+  // Mantenimiento: SOLO de esta unidad. NO derivar el edificio del nombre — eso
+  // cruzaba costos de otras unidades del mismo building entre owners distintos.
+  const [monthResRes, checkoutsRes, monthUtilRes, monthMaintRes, ownerCostsRes, trm, trmDop] = await Promise.all([
     sb.from('reservations').select('owner_revenue, nights, currency, check_in, check_out, channel')
       .eq('property_id', property.id).in('status', ['confirmed', 'checked_in', 'checked_out'])
       .lte('check_in', monthEnd).gt('check_out', monthStart),
@@ -101,16 +100,21 @@ export async function getMonthlyStatement(sb: any, property: any, monthKey: stri
     sb.from('utility_costs').select('utility_type, amount, currency, month')
       .eq('property_id', property.id).eq('month', monthKey),
     sb.from('maintenance_costs').select('amount, currency, date, property_id, building')
-      .or(maintOr).gte('date', monthStart).lte('date', monthEnd),
+      .eq('property_id', property.id).gte('date', monthStart).lte('date', monthEnd),
     sb.from('owner_costs').select('*').eq('property_id', property.id).then(
       (r: any) => r,
       () => ({ data: [], error: null }),
     ),
+    getUSDtoCOPRate(),
+    getUSDtoDOPRate(),
   ])
 
-  const trm = await getUSDtoCOPRate()
-  const toUSD = (amount: number, currency: string | null | undefined) =>
-    (currency || 'USD').toUpperCase() === 'COP' ? amount / trm : amount
+  const toUSD = (amount: number, currency: string | null | undefined) => {
+    const c = (currency || 'USD').toUpperCase()
+    if (c === 'COP') return amount / trm
+    if (c === 'DOP') return amount / trmDop
+    return amount
+  }
 
   const monthReservations = monthResRes.data ?? []
   const totalBookedNights = monthReservations.reduce((s: number, r: any) =>
