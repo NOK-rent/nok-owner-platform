@@ -37,6 +37,7 @@ interface Notification {
   body: string | null
   link_url: string | null
   link_label: string | null
+  attachments?: Attachment[] | null
   is_read: boolean
   created_at: string
 }
@@ -253,7 +254,8 @@ export default function EquipoClient({ ownerName, properties, initialTickets, no
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-[#1A1A1A]">{n.title}</p>
                     {n.body && <p className="text-sm mt-1 whitespace-pre-wrap" style={{ color: 'rgba(26,26,26,0.6)' }}>{n.body}</p>}
-                    {n.link_url && (
+                    <AttachmentChips attachments={n.attachments ?? undefined} />
+                    {n.link_url && !(n.attachments?.length && n.link_url === n.attachments[0]?.url) && (
                       <a href={n.link_url} target="_blank" rel="noopener noreferrer" className="inline-block text-sm font-medium mt-2" style={{ color: '#833B0E' }}>
                         {n.link_label || 'Ver más'} →
                       </a>

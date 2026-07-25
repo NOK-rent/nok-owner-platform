@@ -29,7 +29,7 @@ export default async function EquipoPage() {
       .order('updated_at', { ascending: false })
       .limit(100),
     sb.from('owner_notifications')
-      .select('id, type, title, body, link_url, link_label, is_read, created_at')
+      .select('id, type, title, body, link_url, link_label, attachments, is_read, created_at')
       .eq('owner_id', owner.id)
       .order('created_at', { ascending: false })
       .limit(50),
