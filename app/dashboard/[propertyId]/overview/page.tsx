@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { copToUSD, getUSDtoCOPRate } from '@/lib/trm'
 import SupportForm from '@/components/dashboard/SupportForm'
 import MonthPills from '@/components/dashboard/MonthPills'
+import NotificationsBanner from '@/components/dashboard/NotificationsBanner'
 import { loadOwnerProperty } from '@/lib/admin'
 import { sumMonthCostsUSD, sumRangeCostsUSD, type OwnerCostRow } from '@/lib/owner-costs'
 
@@ -137,6 +138,21 @@ export default async function OverviewPage({ params, searchParams }: Props) {
   const lastCleaning        = cleaningsRes.data
   const upcomingReservations = upcomingRes.data ?? []
 
+  // ── Ingresos ya confirmados — próximos 12 meses ─────────────
+  const todayIso = now.toISOString().split('T')[0]
+  const in12mIso = new Date(now.getTime() + 365 * 86400000).toISOString().split('T')[0]
+  const { data: next12mRes } = await sb
+    .from('reservations')
+    .select('owner_revenue, currency, nights, check_in')
+    .eq('property_id', propertyId)
+    .in('status', ['confirmed', 'checked_in'])
+    .gte('check_in', todayIso)
+    .lt('check_in', in12mIso)
+  const next12m = next12mRes ?? []
+  const next12mRevenue = next12m.reduce((s: number, r: any) => s + toUSD(r.owner_revenue ?? 0, r.currency), 0)
+  const next12mNights = next12m.reduce((s: number, r: any) => s + (r.nights ?? 0), 0)
+  const next12mNetEstimate = next12mRevenue * (1 - (property.nok_commission_rate ?? 0) / 100)
+
   // ── Current month metrics (prorated) ──────────────────────────
   const monthReservations = monthResRes.data ?? []
   const totalBookedNights = monthReservations.reduce((s: number, r: any) =>
@@ -175,11 +191,11 @@ export default async function OverviewPage({ params, searchParams }: Props) {
   const CHANNEL_COLORS: Record<string, string> = {
     airbnb2: '#ef4444',
     Airbnb: '#ef4444',
-    'booking.com': '#3b82f6',
-    'Booking.com': '#3b82f6',
+    'booking.com': '#0080C6',
+    'Booking.com': '#0080C6',
     Direct: '#0E6845',
     direct: '#0E6845',
-    Vrbo: '#8b5cf6',
+    Vrbo: '#4D439E',
     owner: '#D6A700',
   }
 
@@ -283,7 +299,7 @@ export default async function OverviewPage({ params, searchParams }: Props) {
   const ownerFirstName     = (owner as any).name?.split(' ')[0] ?? 'Propietario'
 
   return (
-    <div style={{ backgroundColor: '#1D1D1B' }}>
+    <div style={{ backgroundColor: '#F0EFED' }}>
 
       {/* ── Hero ──────────────────────────────────────────────────── */}
       <section
@@ -293,7 +309,7 @@ export default async function OverviewPage({ params, searchParams }: Props) {
         {/* Subtle bottom fade */}
         <div
           className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none"
-          style={{ background: 'linear-gradient(to bottom, transparent, #1D1D1B)' }}
+          style={{ background: 'linear-gradient(to bottom, transparent, #F0EFED)' }}
         />
 
         <div className="relative z-10">
@@ -310,7 +326,7 @@ export default async function OverviewPage({ params, searchParams }: Props) {
           </h1>
           <p
             className="text-base mb-10 fade-up-delay-1"
-            style={{ color: 'rgba(242,242,242,0.45)' }}
+            style={{ color: 'rgba(255,255,255,0.6)' }}
           >
             Here&apos;s what&apos;s happening with {property.name} today.
           </p>
@@ -340,9 +356,12 @@ export default async function OverviewPage({ params, searchParams }: Props) {
       {/* ── Content ───────────────────────────────────────────────── */}
       <div className="px-8 lg:px-16 py-10 max-w-6xl space-y-6">
 
+        {/* Comunicados del equipo NOK */}
+        <NotificationsBanner propertyId={propertyId} />
+
         {/* Month selector */}
         <div className="rounded-2xl p-5 nok-card">
-          <p className="text-xs uppercase tracking-widest mb-3" style={{ color: 'rgba(242,242,242,0.35)' }}>
+          <p className="text-xs uppercase tracking-widest mb-3" style={{ color: 'rgba(26,26,26,0.35)' }}>
             Filtrar por mes — {displayYear}
           </p>
           <MonthPills year={displayYear} selected={selectedMonthKey} />
@@ -359,7 +378,7 @@ export default async function OverviewPage({ params, searchParams }: Props) {
         {/* Financial summary — current month (prorated) */}
         {(hasFinancialData || grossRevenue > 0) && (
           <div className="rounded-2xl p-6 nok-card">
-            <h2 className="font-serif text-2xl font-light text-[#F2F2F2] mb-6">
+            <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-6">
               Resumen financiero —{' '}
               {selectedMonthDate.toLocaleDateString('es-DO', { month: 'long', year: 'numeric' })}
             </h2>
@@ -409,11 +428,11 @@ export default async function OverviewPage({ params, searchParams }: Props) {
               )}
               <div
                 className="pt-4 mt-1"
-                style={{ borderTop: '1px solid rgba(242,242,242,0.07)' }}
+                style={{ borderTop: '1px solid rgba(26,26,26,0.07)' }}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[#F2F2F2] font-medium">Ingreso neto propietario</span>
-                  <span className="text-xl font-semibold" style={{ color: '#4ade80' }}>{fmt(netRevenue)}</span>
+                  <span className="text-[#1A1A1A] font-medium">Ingreso neto propietario</span>
+                  <span className="text-xl font-semibold" style={{ color: '#0E6845' }}>{fmt(netRevenue)}</span>
                 </div>
               </div>
             </div>
@@ -423,11 +442,11 @@ export default async function OverviewPage({ params, searchParams }: Props) {
         {/* Utilities breakdown — current month */}
         {Object.keys(utilitiesByType).length > 0 && (
           <div className="rounded-2xl p-6 nok-card">
-            <h2 className="font-serif text-2xl font-light text-[#F2F2F2] mb-2">
+            <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-2">
               Servicios públicos —{' '}
               {selectedMonthDate.toLocaleDateString('es-DO', { month: 'long', year: 'numeric' })}
             </h2>
-            <p className="text-xs mb-5" style={{ color: 'rgba(242,242,242,0.4)' }}>
+            <p className="text-xs mb-5" style={{ color: 'rgba(26,26,26,0.4)' }}>
               Detalle de cada utility pagado este mes para tu apartamento
             </p>
             <div className="space-y-3">
@@ -436,33 +455,33 @@ export default async function OverviewPage({ params, searchParams }: Props) {
                 const totalUsd = items.filter(i => (i.currency || 'COP').toUpperCase() === 'USD').reduce((s, i) => s + i.amount, 0)
                 return (
                   <div key={type} className="flex items-center justify-between py-2"
-                    style={{ borderBottom: '1px solid rgba(242,242,242,0.05)' }}>
+                    style={{ borderBottom: '1px solid rgba(26,26,26,0.05)' }}>
                     <div>
-                      <p className="text-sm font-medium text-[#F2F2F2]">{type}</p>
+                      <p className="text-sm font-medium text-[#1A1A1A]">{type}</p>
                       {items[0]?.reference && (
-                        <p className="text-xs mt-0.5" style={{ color: 'rgba(242,242,242,0.35)' }}>
+                        <p className="text-xs mt-0.5" style={{ color: 'rgba(26,26,26,0.35)' }}>
                           Cuenta: {items[0].reference}
                         </p>
                       )}
                     </div>
                     <div className="text-right">
                       {totalCop > 0 && (
-                        <p className="text-sm text-[#F2F2F2] tabular-nums">
+                        <p className="text-sm text-[#1A1A1A] tabular-nums">
                           {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalCop)}
                         </p>
                       )}
                       {totalUsd > 0 && (
-                        <p className="text-sm text-[#F2F2F2] tabular-nums">{fmt(totalUsd)}</p>
+                        <p className="text-sm text-[#1A1A1A] tabular-nums">{fmt(totalUsd)}</p>
                       )}
                     </div>
                   </div>
                 )
               })}
               <div className="pt-3 flex items-center justify-between">
-                <span className="text-sm font-medium" style={{ color: 'rgba(242,242,242,0.7)' }}>
+                <span className="text-sm font-medium" style={{ color: 'rgba(26,26,26,0.7)' }}>
                   Total servicios (USD)
                 </span>
-                <span className="text-base font-semibold" style={{ color: '#4ade80' }}>
+                <span className="text-base font-semibold" style={{ color: '#0E6845' }}>
                   {fmt(monthUtilitiesUSD)}
                 </span>
               </div>
@@ -478,10 +497,38 @@ export default async function OverviewPage({ params, searchParams }: Props) {
           <MetricCard label="Reservas YTD" value={String(ytdReservations.length)} sub={`${ytdNights} noches totales`} />
         </div>
 
+        {/* Ingresos confirmados — próximos 12 meses */}
+        <div className="rounded-2xl p-6 md:p-8" style={{ backgroundColor: '#1A1A1A' }}>
+          <div className="flex flex-wrap items-end justify-between gap-6">
+            <div>
+              <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                Ingresos ya confirmados · próximos 12 meses
+              </p>
+              <p className="font-serif text-5xl font-light text-white leading-none">{fmt(next12mRevenue)}</p>
+              <p className="text-xs mt-3" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                {next12m.length} reservas confirmadas · {next12mNights} noches ya vendidas
+              </p>
+            </div>
+            <div className="text-right">
+              {property.nok_commission_rate != null && next12mRevenue > 0 && (
+                <>
+                  <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                    Neto estimado después de comisión NOK
+                  </p>
+                  <p className="font-serif text-3xl font-light" style={{ color: '#7FD1A7' }}>{fmt(next12mNetEstimate)}</p>
+                </>
+              )}
+            </div>
+          </div>
+          <p className="text-[11px] mt-4" style={{ color: 'rgba(255,255,255,0.3)' }}>
+            Solo reservas ya confirmadas en el calendario — este número crece cada semana a medida que entran nuevas reservas. No incluye limpiezas, servicios ni otros descuentos del reporte mensual.
+          </p>
+        </div>
+
         {/* Financial summary — YTD */}
         {(hasFinancialData || ytdRevenue > 0) && (
           <div className="rounded-2xl p-6 nok-card">
-            <h2 className="font-serif text-2xl font-light text-[#F2F2F2] mb-6">
+            <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-6">
               Resumen financiero — YTD {now.getFullYear()}
             </h2>
             <div className="space-y-4">
@@ -530,11 +577,11 @@ export default async function OverviewPage({ params, searchParams }: Props) {
               )}
               <div
                 className="pt-4 mt-1"
-                style={{ borderTop: '1px solid rgba(242,242,242,0.07)' }}
+                style={{ borderTop: '1px solid rgba(26,26,26,0.07)' }}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[#F2F2F2] font-medium">Ingreso neto propietario YTD</span>
-                  <span className="text-xl font-semibold" style={{ color: '#4ade80' }}>{fmt(ytdNetRevenue)}</span>
+                  <span className="text-[#1A1A1A] font-medium">Ingreso neto propietario YTD</span>
+                  <span className="text-xl font-semibold" style={{ color: '#0E6845' }}>{fmt(ytdNetRevenue)}</span>
                 </div>
               </div>
             </div>
@@ -546,7 +593,7 @@ export default async function OverviewPage({ params, searchParams }: Props) {
         {/* Channel breakdown */}
         {channels.length > 0 && (
           <div className="rounded-2xl p-6 nok-card">
-            <h2 className="font-serif text-2xl font-light text-[#F2F2F2] mb-6">
+            <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-6">
               Origen de reservas — {now.getFullYear()}
             </h2>
             <div className="space-y-4">
@@ -558,15 +605,15 @@ export default async function OverviewPage({ params, searchParams }: Props) {
                     <div className="flex items-center justify-between text-sm mb-2">
                       <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-                        <span className="font-medium text-[#F2F2F2]">{channel}</span>
+                        <span className="font-medium text-[#1A1A1A]">{channel}</span>
                       </div>
-                      <span style={{ color: 'rgba(242,242,242,0.45)' }}>
+                      <span style={{ color: 'rgba(26,26,26,0.45)' }}>
                         {data.count} reservas · {fmt(data.revenue)}
                       </span>
                     </div>
                     <div
                       className="h-1.5 rounded-full overflow-hidden"
-                      style={{ backgroundColor: 'rgba(242,242,242,0.06)' }}
+                      style={{ backgroundColor: 'rgba(26,26,26,0.06)' }}
                     >
                       <div
                         className="h-full rounded-full transition-all duration-700"
@@ -585,11 +632,11 @@ export default async function OverviewPage({ params, searchParams }: Props) {
           {/* Upcoming reservations */}
           <div className="rounded-2xl p-6 nok-card">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="font-serif text-2xl font-light text-[#F2F2F2]">Próximas reservas</h2>
+              <h2 className="font-serif text-2xl font-light text-[#1A1A1A]">Próximas reservas</h2>
               <Link
                 href={`/dashboard/${propertyId}/reservations`}
                 className="text-xs transition-colors duration-200"
-                style={{ color: '#B9B5DC' }}
+                style={{ color: '#833B0E' }}
                 onMouseEnter={undefined}
               >
                 Ver todas →
@@ -601,13 +648,13 @@ export default async function OverviewPage({ params, searchParams }: Props) {
                   className="w-10 h-10 rounded-full flex items-center justify-center mb-3"
                   style={{ backgroundColor: 'rgba(131, 59, 14,0.1)' }}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(185,181,220,0.5)" strokeWidth="1.5">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(131,59,14,0.5)" strokeWidth="1.5">
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
                     <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
                     <line x1="3" y1="10" x2="21" y2="10"/>
                   </svg>
                 </div>
-                <p className="text-sm" style={{ color: 'rgba(242,242,242,0.3)' }}>No hay reservas próximas</p>
+                <p className="text-sm" style={{ color: 'rgba(26,26,26,0.3)' }}>No hay reservas próximas</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -615,11 +662,11 @@ export default async function OverviewPage({ params, searchParams }: Props) {
                   <div
                     key={i}
                     className="flex items-center justify-between py-3 first:pt-0"
-                    style={{ borderBottom: i < upcomingReservations.length - 1 ? '1px solid rgba(242,242,242,0.05)' : 'none' }}
+                    style={{ borderBottom: i < upcomingReservations.length - 1 ? '1px solid rgba(26,26,26,0.05)' : 'none' }}
                   >
                     <div>
-                      <p className="text-sm font-medium text-[#F2F2F2]">{r.guest_name ?? 'Huésped'}</p>
-                      <p className="text-xs mt-0.5" style={{ color: 'rgba(242,242,242,0.4)' }}>
+                      <p className="text-sm font-medium text-[#1A1A1A]">{r.guest_name ?? 'Huésped'}</p>
+                      <p className="text-xs mt-0.5" style={{ color: 'rgba(26,26,26,0.4)' }}>
                         {new Date(r.check_in).toLocaleDateString('es-DO', { month: 'short', day: 'numeric' })}
                         {' — '}
                         {new Date(r.check_out).toLocaleDateString('es-DO', { month: 'short', day: 'numeric' })}
@@ -631,7 +678,7 @@ export default async function OverviewPage({ params, searchParams }: Props) {
                         className="text-xs px-2.5 py-1 rounded-full font-medium"
                         style={{
                           backgroundColor: `${CHANNEL_COLORS[r.channel] ?? '#6b7280'}18`,
-                          color: CHANNEL_COLORS[r.channel] ?? 'rgba(242,242,242,0.5)',
+                          color: CHANNEL_COLORS[r.channel] ?? 'rgba(26,26,26,0.5)',
                           border: `1px solid ${CHANNEL_COLORS[r.channel] ?? '#6b7280'}35`,
                         }}
                       >
@@ -646,7 +693,7 @@ export default async function OverviewPage({ params, searchParams }: Props) {
 
           {/* Operations */}
           <div className="rounded-2xl p-6 nok-card">
-            <h2 className="font-serif text-2xl font-light text-[#F2F2F2] mb-6">Estado operativo</h2>
+            <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-6">Estado operativo</h2>
             <div className="space-y-4">
               <OpRow
                 label="Última limpieza"
@@ -724,12 +771,12 @@ export default async function OverviewPage({ params, searchParams }: Props) {
         <div
           className="flex items-center justify-between py-6 text-xs"
           style={{
-            borderTop: '1px solid rgba(242,242,242,0.06)',
-            color: 'rgba(242,242,242,0.2)',
+            borderTop: '1px solid rgba(26,26,26,0.06)',
+            color: 'rgba(26,26,26,0.2)',
           }}
         >
           <span className="font-serif text-sm tracking-[0.2em]">NOK</span>
-          <span>Curated stays designed to flow with you · <a href="https://nok.rent" target="_blank" rel="noopener" className="hover:text-[#B9B5DC] transition-colors">nok.rent</a></span>
+          <span>Curated stays designed to flow with you · <a href="https://nok.rent" target="_blank" rel="noopener" className="hover:text-[#833B0E] transition-colors">nok.rent</a></span>
         </div>
       </div>
     </div>
@@ -743,15 +790,15 @@ function StatPill({ label, value }: { label: string; value: string }) {
     <div
       className="flex items-center gap-4 px-5 py-3 rounded-xl"
       style={{
-        backgroundColor: 'rgba(20,20,19,0.7)',
+        backgroundColor: 'rgba(255,255,255,0.7)',
         border: '1px solid rgba(131, 59, 14,0.3)',
         borderLeft: '3px solid #833B0E',
         backdropFilter: 'blur(8px)',
       }}
     >
       <div>
-        <p className="text-xl font-semibold text-[#F2F2F2] leading-none">{value}</p>
-        <p className="text-xs mt-1" style={{ color: 'rgba(242,242,242,0.45)' }}>{label}</p>
+        <p className="text-xl font-semibold text-[#1A1A1A] leading-none">{value}</p>
+        <p className="text-xs mt-1" style={{ color: 'rgba(26,26,26,0.45)' }}>{label}</p>
       </div>
     </div>
   )
@@ -762,9 +809,9 @@ function MetricCard({ label, value, sub }: { label: string; value: string; sub?:
     <div
       className="rounded-2xl p-5 nok-card"
     >
-      <p className="text-xs uppercase tracking-widest mb-3" style={{ color: 'rgba(242,242,242,0.35)' }}>{label}</p>
-      <p className="font-serif text-4xl font-light text-[#F2F2F2] leading-none">{value}</p>
-      {sub && <p className="text-xs mt-2" style={{ color: 'rgba(242,242,242,0.3)' }}>{sub}</p>}
+      <p className="text-xs uppercase tracking-widest mb-3" style={{ color: 'rgba(26,26,26,0.35)' }}>{label}</p>
+      <p className="font-serif text-4xl font-light text-[#1A1A1A] leading-none">{value}</p>
+      {sub && <p className="text-xs mt-2" style={{ color: 'rgba(26,26,26,0.3)' }}>{sub}</p>}
     </div>
   )
 }
@@ -777,8 +824,8 @@ function FinRow({ label, value, deduct = false, accent = false }: {
 }) {
   return (
     <div className="flex items-center justify-between text-sm">
-      <span style={{ color: 'rgba(242,242,242,0.55)' }}>{label}</span>
-      <span style={{ color: deduct ? 'rgba(242,100,100,0.85)' : accent ? '#4ade80' : '#F2F2F2' }}>
+      <span style={{ color: 'rgba(26,26,26,0.55)' }}>{label}</span>
+      <span style={{ color: deduct ? '#DC2626' : accent ? '#0E6845' : '#1A1A1A' }}>
         {value}
       </span>
     </div>
@@ -797,9 +844,9 @@ function ReviewCard({ platform, score, count, color }: {
         ⭐
       </div>
       <div>
-        <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'rgba(242,242,242,0.35)' }}>{platform}</p>
-        <p className="font-serif text-3xl font-light text-[#F2F2F2]">{score.toFixed(2)}</p>
-        {count && <p className="text-xs mt-0.5" style={{ color: 'rgba(242,242,242,0.3)' }}>{count} reseñas</p>}
+        <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'rgba(26,26,26,0.35)' }}>{platform}</p>
+        <p className="font-serif text-3xl font-light text-[#1A1A1A]">{score.toFixed(2)}</p>
+        {count && <p className="text-xs mt-0.5" style={{ color: 'rgba(26,26,26,0.3)' }}>{count} reseñas</p>}
       </div>
     </div>
   )
@@ -809,10 +856,10 @@ function OpRow({ label, value }: { label: string; value: string }) {
   return (
     <div
       className="flex items-center justify-between py-3 text-sm"
-      style={{ borderBottom: '1px solid rgba(242,242,242,0.04)' }}
+      style={{ borderBottom: '1px solid rgba(26,26,26,0.04)' }}
     >
-      <span style={{ color: 'rgba(242,242,242,0.45)' }}>{label}</span>
-      <span className="font-medium text-[#F2F2F2]">{value}</span>
+      <span style={{ color: 'rgba(26,26,26,0.45)' }}>{label}</span>
+      <span className="font-medium text-[#1A1A1A]">{value}</span>
     </div>
   )
 }
