@@ -200,8 +200,26 @@ function isoDaysFromNow(days: number): string {
   return d.toISOString().slice(0, 10)
 }
 
-export async function getRevenueSnapshot(guestyListingId: string): Promise<RevenueSnapshot | null> {
-  const q = `channel=guesty`
+export type WheelhouseChannel = 'guesty' | 'airbnb'
+
+/**
+ * Resolve the Wheelhouse listing reference for a property row.
+ * Priority: properties.wheelhouse_property_id (optionally "channel:id" for
+ * non-guesty channels) → properties.guesty_listing_id (channel guesty).
+ */
+export function resolveWheelhouseRef(property: { wheelhouse_property_id?: string | null; guesty_listing_id?: string | null }): { id: string; channel: WheelhouseChannel } | null {
+  const override = property.wheelhouse_property_id?.trim()
+  if (override) {
+    const [maybeChannel, rest] = override.includes(':') ? override.split(':', 2) : [null, override]
+    if (maybeChannel === 'airbnb' || maybeChannel === 'guesty') return { id: rest, channel: maybeChannel }
+    return { id: override, channel: 'guesty' }
+  }
+  if (property.guesty_listing_id) return { id: property.guesty_listing_id, channel: 'guesty' }
+  return null
+}
+
+export async function getRevenueSnapshot(guestyListingId: string, channel: WheelhouseChannel = 'guesty'): Promise<RevenueSnapshot | null> {
+  const q = `channel=${channel}`
   const start = isoDaysFromNow(0)
   const end = isoDaysFromNow(90)
 

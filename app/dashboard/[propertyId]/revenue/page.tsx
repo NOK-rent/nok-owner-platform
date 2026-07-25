@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { loadOwnerProperty } from '@/lib/admin'
-import { getRevenueSnapshot, type RateDay, type OccWindow, type BasePriceBreakdown, type SeasonRange } from '@/lib/wheelhouse'
+import { getRevenueSnapshot, resolveWheelhouseRef, type RateDay, type OccWindow, type BasePriceBreakdown, type SeasonRange } from '@/lib/wheelhouse'
 
 interface Props {
   params: Promise<{ propertyId: string }>
@@ -211,8 +211,8 @@ export default async function RevenuePage({ params }: Props) {
   const { property, sb } = await loadOwnerProperty(propertyId)
   if (!property) notFound()
 
-  const listingId = property.guesty_listing_id as string | null
-  const snap = listingId ? await getRevenueSnapshot(listingId) : null
+  const whRef = resolveWheelhouseRef(property)
+  const snap = whRef ? await getRevenueSnapshot(whRef.id, whRef.channel) : null
 
   // Our booked nights (next 60 days) from the portal's own reservations
   const today = new Date().toISOString().slice(0, 10)
