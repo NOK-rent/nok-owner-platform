@@ -128,7 +128,7 @@ export function RateChartInteractive({ days, en }: { days: RateDayLite[]; en: bo
       lines: [
         `${en ? 'Your rate' : 'Tu tarifa'}: ${d.ours != null ? `$${Math.round(d.ours)}` : '—'}`,
         `${en ? 'Area median' : 'Mediana zona'}: $${Math.round(d.zoneMedian as number)}`,
-        `${en ? 'Area range' : 'Rango zona'}: $${Math.round(d.zoneLow ?? 0)} – $${Math.round(d.zoneHigh ?? 0)}`,
+        `${en ? 'Typical area range' : 'Rango típico zona'}: $${Math.round(d.zoneLow ?? 0)} – $${Math.round(d.zoneHigh ?? 0)}`,
       ],
     })
   }

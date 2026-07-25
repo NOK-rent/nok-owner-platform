@@ -309,14 +309,14 @@ export default async function RevenuePage({ params }: Props) {
                   <div className="flex gap-5 text-xs" style={{ color: 'rgba(26,26,26,0.45)' }}>
                     <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-1 rounded-full" style={{ backgroundColor: '#0E6845' }} /> {EN ? 'Your rate' : 'Tu tarifa'}</span>
                     <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-1 rounded-full" style={{ backgroundColor: '#0080C6' }} /> {EN ? 'Area median' : 'Mediana de la zona'}</span>
-                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-2.5 rounded-sm" style={{ backgroundColor: 'rgba(148,184,207,0.25)' }} /> {EN ? 'Area range' : 'Rango de la zona'}</span>
+                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-2.5 rounded-sm" style={{ backgroundColor: 'rgba(148,184,207,0.25)' }} /> {EN ? 'Typical area range' : 'Rango típico de la zona'}</span>
                   </div>
                 </div>
                 <RateChartInteractive days={snap.rateDays} en={EN} />
                 <p className="text-xs mt-3" style={{ color: 'rgba(26,26,26,0.35)' }}>
                   {EN
-                    ? 'In USD. Hover over the chart to see each night. The area is the set of comparable properties around your unit.'
-                    : 'En USD. Pasa el cursor por el gráfico para ver cada noche. La zona son las propiedades comparables alrededor de tu unidad.'}
+                    ? 'In USD. Hover over the chart to see each night. The area is the set of comparable properties around your unit with the same number of bedrooms; the band covers the typical range (middle 50% of the area — there are cheaper and pricier listings outside it).'
+                    : 'En USD. Pasa el cursor por el gráfico para ver cada noche. La zona son las propiedades comparables alrededor de tu unidad con el mismo número de habitaciones; la banda cubre el rango típico (el 50% central de la zona — hay propiedades más baratas y más caras fuera de ella).'}
                 </p>
               </div>
             )}
