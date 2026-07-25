@@ -185,126 +185,123 @@ export default function CalendarView({ propertyId, year, month, reservations, pr
           ))}
         </div>
 
-        {/* Calendar grid */}
-        <div className="grid grid-cols-7">
-          {cells.map((cell, i) => {
-            if (!cell) return (
-              <div
-                key={i}
-                className="min-h-[88px]"
-                style={{ borderRight: '1px solid rgba(26,26,26,0.04)', borderBottom: '1px solid rgba(26,26,26,0.04)', backgroundColor: '#E9E7E2' }}
-              />
-            )
-
-            const { date, day } = cell
-            const reservation  = reservationMap.get(date)
-            const price        = pricingMap.get(date)
-            const isToday      = date === today
-            const isPast       = date < today
-            const isCheckIn    = reservation?.check_in === date
-            const channelStyle = reservation ? getChannelStyle(reservation.channel) : DEFAULT_CHANNEL
+        {/* Calendar grid — reservas como barras continuas por semana */}
+        <div>
+          {Array.from({ length: cells.length / 7 }, (_, w) => cells.slice(w * 7, w * 7 + 7)).map((week, w) => {
+            // Segmentos de reservas que tocan esta semana (noches: check_in .. check_out-1)
+            const weekDates = week.map(c => c?.date ?? null)
+            const firstDate = weekDates.find(Boolean) as string | undefined
+            const lastDate = [...weekDates].reverse().find(Boolean) as string | undefined
+            const segs: { r: Reservation; startIdx: number; endIdx: number; showInfo: boolean }[] = []
+            if (firstDate && lastDate) {
+              const seen = new Set<string>()
+              for (const r of reservations) {
+                const key = r.check_in + (r.guest_name ?? '')
+                if (seen.has(key)) continue
+                const lastNight = new Date(new Date(r.check_out + 'T00:00:00').getTime() - 86400000).toISOString().slice(0, 10)
+                if (lastNight < firstDate || r.check_in > lastDate) continue
+                seen.add(key)
+                const startIdx = weekDates.findIndex(d => d != null && d >= r.check_in)
+                let endIdx = -1
+                for (let i = weekDates.length - 1; i >= 0; i--) {
+                  const d = weekDates[i]
+                  if (d != null && d <= lastNight) { endIdx = i; break }
+                }
+                if (startIdx === -1 || endIdx === -1 || endIdx < startIdx) continue
+                segs.push({ r, startIdx, endIdx, showInfo: weekDates.includes(r.check_in) || (firstDate <= r.check_in) })
+              }
+            }
 
             return (
-              <div
-                key={date}
-                onClick={() => reservation && setSelectedReservation(reservation)}
-                className="min-h-[88px] p-1.5 flex flex-col transition-colors duration-150"
-                style={{
-                  borderRight: '1px solid rgba(26,26,26,0.04)',
-                  borderBottom: '1px solid rgba(26,26,26,0.04)',
-                  backgroundColor: reservation
-                    ? `${channelStyle.bg}`
-                    : isPast ? '#E9E7E2' : '#FFFFFF',
-                  cursor: reservation ? 'pointer' : 'default',
-                }}
-                onMouseEnter={e => {
-                  if (reservation)
-                    (e.currentTarget as HTMLElement).style.filter = 'brightness(1.15)'
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.filter = 'none'
-                }}
-              >
-                {/* Day number */}
-                <div className="flex items-start justify-between mb-1">
-                  <span
-                    className="w-6 h-6 flex items-center justify-center rounded-full text-xs font-medium"
-                    style={{
-                      backgroundColor: isToday ? '#833B0E' : 'transparent',
-                      color: isToday ? '#FFFFFF' : isPast ? 'rgba(26,26,26,0.2)' : 'rgba(26,26,26,0.6)',
-                    }}
-                  >
-                    {day}
-                  </span>
-                  {isCheckIn && (
-                    <span className="text-[9px] font-semibold px-1 py-0.5 rounded" style={{ color: '#0E6845', backgroundColor: 'rgba(74,222,128,0.1)' }}>IN</span>
-                  )}
-                  {reservation?.check_out === date && !isCheckIn && (
-                    <span className="text-[9px] font-semibold px-1 py-0.5 rounded" style={{ color: '#F20022', backgroundColor: 'rgba(252,165,165,0.1)' }}>OUT</span>
-                  )}
+              <div key={w} className="relative">
+                <div className="grid grid-cols-7">
+                  {week.map((cell, i) => {
+                    if (!cell) return (
+                      <div key={i} className="min-h-[96px]"
+                        style={{ borderRight: '1px solid rgba(26,26,26,0.04)', borderBottom: '1px solid rgba(26,26,26,0.04)', backgroundColor: '#E9E7E2' }} />
+                    )
+                    const { date, day } = cell
+                    const reservation = reservationMap.get(date)
+                    const price = pricingMap.get(date)
+                    const isToday = date === today
+                    const isPast = date < today
+                    const channelStyle = reservation ? getChannelStyle(reservation.channel) : DEFAULT_CHANNEL
+                    return (
+                      <div key={date} className="min-h-[96px] p-1.5 flex flex-col"
+                        style={{
+                          borderRight: '1px solid rgba(26,26,26,0.04)',
+                          borderBottom: '1px solid rgba(26,26,26,0.04)',
+                          backgroundColor: reservation ? channelStyle.bg : isPast ? '#E9E7E2' : '#FFFFFF',
+                        }}>
+                        <div className="flex items-start justify-between mb-1">
+                          <span className="w-6 h-6 flex items-center justify-center rounded-full text-xs font-medium"
+                            style={{
+                              backgroundColor: isToday ? '#833B0E' : 'transparent',
+                              color: isToday ? '#FFFFFF' : isPast ? 'rgba(26,26,26,0.2)' : 'rgba(26,26,26,0.6)',
+                            }}>
+                            {day}
+                          </span>
+                          {reservation?.check_in === date && (
+                            <span className="text-[9px] font-semibold px-1 py-0.5 rounded" style={{ color: '#0E6845', backgroundColor: 'rgba(74,222,128,0.1)' }}>IN</span>
+                          )}
+                        </div>
+                        {!reservation && price && !price.is_blocked && (
+                          <div className="mt-auto">
+                            {price.base_rate ? (
+                              <p className="text-[10px] font-semibold" style={{ color: 'rgba(214,167,0,0.8)' }}>
+                                {fmt(price.base_rate, price.currency ?? 'USD')}
+                              </p>
+                            ) : (
+                              <p className="text-[9px]" style={{ color: 'rgba(26,26,26,0.2)' }}>Disponible</p>
+                            )}
+                            {price.min_stay_nights && price.min_stay_nights > 1 && (
+                              <p className="text-[9px]" style={{ color: 'rgba(26,26,26,0.25)' }}>{price.min_stay_nights}n mín</p>
+                            )}
+                          </div>
+                        )}
+                        {!reservation && !price && !isPast && (
+                          <div className="mt-auto"><p className="text-[9px]" style={{ color: 'rgba(26,26,26,0.15)' }}>Disponible</p></div>
+                        )}
+                        {!reservation && price?.is_blocked && (
+                          <div className="rounded px-1 py-0.5 mt-auto" style={{ backgroundColor: 'rgba(26,26,26,0.05)' }}>
+                            <p className="text-[9px]" style={{ color: 'rgba(26,26,26,0.25)' }}>Bloqueado</p>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
 
-                {/* Reservation bar */}
-                {reservation && (
-                  <div
-                    className="rounded-md px-1.5 py-1 mb-1 flex-1"
-                    style={{
-                      borderLeft: `3px solid ${channelStyle.border}`,
-                      backgroundColor: '#FFFFFF',
-                      border: `1px solid ${channelStyle.border}33`,
-                      borderLeftWidth: '3px',
-                      borderLeftColor: channelStyle.border,
-                      boxShadow: '0 1px 2px rgba(26,26,26,0.05)',
-                    }}
-                  >
-                    <p className="text-[10px] font-medium truncate leading-tight" style={{ color: channelStyle.text }}>
-                      {reservation.guest_name || 'Huésped'}
-                    </p>
-                    {isCheckIn && (
-                      <>
-                        <p className="text-[9px] leading-tight mt-0.5" style={{ color: 'rgba(26,26,26,0.4)' }}>
-                          {reservation.nights}n · {channelLabel(reservation.channel)}
+                {/* Barras continuas de reservas (una por reserva por semana) */}
+                {segs.map(({ r, startIdx, endIdx, showInfo }, si) => {
+                  const cs = getChannelStyle(r.channel)
+                  return (
+                    <button
+                      key={si}
+                      onClick={() => setSelectedReservation(r)}
+                      className="absolute rounded-lg px-2 py-1 text-left overflow-hidden cursor-pointer transition-transform hover:scale-[1.01]"
+                      style={{
+                        top: '34px',
+                        left: `calc(${(startIdx / 7) * 100}% + 4px)`,
+                        width: `calc(${((endIdx - startIdx + 1) / 7) * 100}% - 8px)`,
+                        backgroundColor: '#FFFFFF',
+                        border: `1px solid ${cs.border}55`,
+                        borderLeft: `4px solid ${cs.border}`,
+                        boxShadow: '0 1px 3px rgba(26,26,26,0.08)',
+                        zIndex: 2,
+                      }}
+                    >
+                      <p className="text-[11px] font-medium truncate leading-tight" style={{ color: cs.text }}>
+                        {r.guest_name || 'Huésped'}
+                      </p>
+                      {showInfo && (
+                        <p className="text-[9px] truncate leading-tight" style={{ color: 'rgba(26,26,26,0.45)' }}>
+                          {r.nights}n · {channelLabel(r.channel)}{r.owner_revenue ? ` · ${fmt(r.owner_revenue, r.currency ?? 'USD')}` : ''}
                         </p>
-                        {reservation.owner_revenue ? (
-                          <p className="text-[9px] font-semibold leading-tight mt-0.5" style={{ color: '#0E6845' }}>
-                            {fmt(reservation.owner_revenue, reservation.currency ?? 'USD')}
-                          </p>
-                        ) : null}
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {/* Rate — show on available days */}
-                {!reservation && price && !price.is_blocked && (
-                  <div className="mt-auto">
-                    {price.base_rate ? (
-                      <p className="text-[10px] font-semibold" style={{ color: 'rgba(214,167,0,0.8)' }}>
-                        {fmt(price.base_rate, price.currency ?? 'USD')}
-                      </p>
-                    ) : (
-                      <p className="text-[9px]" style={{ color: 'rgba(26,26,26,0.2)' }}>
-                        Disponible
-                      </p>
-                    )}
-                    {price.min_stay_nights && price.min_stay_nights > 1 && (
-                      <p className="text-[9px]" style={{ color: 'rgba(26,26,26,0.25)' }}>{price.min_stay_nights}n mín</p>
-                    )}
-                  </div>
-                )}
-                {/* No pricing data, no reservation — show available */}
-                {!reservation && !price && !isPast && (
-                  <div className="mt-auto">
-                    <p className="text-[9px]" style={{ color: 'rgba(26,26,26,0.15)' }}>Disponible</p>
-                  </div>
-                )}
-
-                {/* Blocked */}
-                {!reservation && price?.is_blocked && (
-                  <div className="rounded px-1 py-0.5 mt-auto" style={{ backgroundColor: 'rgba(26,26,26,0.05)' }}>
-                    <p className="text-[9px]" style={{ color: 'rgba(26,26,26,0.25)' }}>Bloqueado</p>
-                  </div>
-                )}
+                      )}
+                    </button>
+                  )
+                })}
               </div>
             )
           })}
