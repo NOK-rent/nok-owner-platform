@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { copToUSD, getUSDtoCOPRate } from '@/lib/trm'
 import SupportForm from '@/components/dashboard/SupportForm'
 import MonthPills from '@/components/dashboard/MonthPills'
-import NotificationsBanner from '@/components/dashboard/NotificationsBanner'
 import { loadOwnerProperty } from '@/lib/admin'
 import { sumMonthCostsUSD, sumRangeCostsUSD, type OwnerCostRow } from '@/lib/owner-costs'
 
@@ -357,7 +356,6 @@ export default async function OverviewPage({ params, searchParams }: Props) {
       <div className="px-8 lg:px-16 py-10 max-w-6xl space-y-6">
 
         {/* Comunicados del equipo NOK */}
-        <NotificationsBanner propertyId={propertyId} />
 
         {/* Month selector */}
         <div className="rounded-2xl p-5 nok-card">
