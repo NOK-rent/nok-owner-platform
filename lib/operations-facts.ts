@@ -92,3 +92,54 @@ export async function getOperationsFacts(
     camas: (property.bedrooms ?? 0) * checkouts,
   }
 }
+
+export interface OwnerOpsFacts {
+  mensajes: number | null
+  limpiezas: number
+  camas: number
+  incidencias: number
+}
+
+/** Agregado del mes en curso para TODAS las propiedades del owner (pestaña Equipo NOK). */
+export async function getOwnerOperationsFacts(
+  sb: any,
+  properties: { id: string; bedrooms: number | null }[],
+  monthKey: string,
+): Promise<OwnerOpsFacts> {
+  const ids = properties.map(p => p.id)
+  if (!ids.length) return { mensajes: null, limpiezas: 0, camas: 0, incidencias: 0 }
+  const [y, m] = monthKey.split('-').map(Number)
+  const monthStart = `${monthKey}-01`
+  const nextMonth = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, '0')}-01`
+
+  const [limpRes, coRes, incRes] = await Promise.all([
+    sb.from('cx_limpieza').select('id', { count: 'exact', head: true })
+      .in('property_id', ids).gte('service_date', monthStart).lt('service_date', nextMonth).eq('estado', 'activa')
+      .then((r: any) => r, () => ({ count: 0 })),
+    sb.from('reservations').select('property_id')
+      .in('property_id', ids).in('status', ['confirmed', 'checked_in', 'checked_out'])
+      .gte('check_out', monthStart).lt('check_out', nextMonth),
+    sb.from('cx_incidencias').select('id', { count: 'exact', head: true })
+      .in('property_id', ids).gte('guesty_created_at', monthStart).lt('guesty_created_at', nextMonth)
+      .neq('status', 'descartada')
+      .then((r: any) => r, () => ({ count: 0 })),
+  ])
+
+  const coByProp = new Map<string, number>()
+  for (const r of coRes.data ?? []) coByProp.set(r.property_id, (coByProp.get(r.property_id) ?? 0) + 1)
+  const camas = properties.reduce((s2, p2) => s2 + (p2.bedrooms ?? 0) * (coByProp.get(p2.id) ?? 0), 0)
+
+  // Mensajes solo para owners con pocas unidades (protege el rate limit de Guesty; cache 24h por unidad)
+  let mensajes: number | null = null
+  if (ids.length <= 5) {
+    let total = 0, ok = true
+    for (const pid of ids) {
+      const c = await countHostMessages(sb, pid, monthStart, nextMonth)
+      if (c == null) { ok = false; break }
+      total += c
+    }
+    mensajes = ok ? total : null
+  }
+
+  return { mensajes, limpiezas: limpRes.count ?? 0, camas, incidencias: incRes.count ?? 0 }
+}

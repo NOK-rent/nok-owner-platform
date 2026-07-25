@@ -56,12 +56,15 @@ interface WorkItem {
   properties: { name: string } | null
 }
 
+interface OpsFacts { mensajes: number | null; limpiezas: number; camas: number; incidencias: number }
+
 interface Props {
   ownerName: string
   properties: PropertyLite[]
   initialTickets: Ticket[]
   notifications: Notification[]
   initialWorkItems?: WorkItem[]
+  opsFacts?: OpsFacts | null
 }
 
 const WORK_STATUS: Record<string, { es: string; en: string; bg: string; color: string }> = {
@@ -123,7 +126,7 @@ function AttachmentChips({ attachments }: { attachments?: Attachment[] }) {
   )
 }
 
-export default function EquipoClient({ ownerName, properties, initialTickets, notifications, initialWorkItems = [] }: Props) {
+export default function EquipoClient({ ownerName, properties, initialTickets, notifications, initialWorkItems = [], opsFacts = null }: Props) {
   const [tab, setTab] = useState<'conversaciones' | 'comunicados' | 'inspecciones'>('conversaciones')
   const [workItems, setWorkItems] = useState<WorkItem[]>(initialWorkItems)
   const [acceptingId, setAcceptingId] = useState<string | null>(null)
@@ -259,6 +262,39 @@ export default function EquipoClient({ ownerName, properties, initialTickets, no
           + Nueva consulta
         </button>
       </div>
+
+      {/* Operación del mes */}
+      {opsFacts && (opsFacts.limpiezas > 0 || opsFacts.camas > 0 || opsFacts.incidencias > 0 || (opsFacts.mensajes ?? 0) > 0) && (
+        <div className="mb-6">
+          <p className="text-xs uppercase tracking-widest mb-3" style={{ color: 'rgba(26,26,26,0.35)' }}>
+            {locale === 'en' ? 'This month\'s operation' : 'Operación del mes'}
+          </p>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {opsFacts.mensajes != null && (
+              <div className="rounded-2xl p-5 nok-card">
+                <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'rgba(26,26,26,0.35)' }}>{locale === 'en' ? 'Messages answered' : 'Mensajes respondidos'}</p>
+                <p className="font-serif text-4xl font-light text-[#1A1A1A]">{opsFacts.mensajes}</p>
+                <p className="text-xs mt-1" style={{ color: 'rgba(26,26,26,0.3)' }}>{locale === 'en' ? 'NOK replies to your guests' : 'respuestas de NOK a tus huéspedes'}</p>
+              </div>
+            )}
+            <div className="rounded-2xl p-5 nok-card">
+              <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'rgba(26,26,26,0.35)' }}>{locale === 'en' ? 'Cleanings' : 'Limpiezas realizadas'}</p>
+              <p className="font-serif text-4xl font-light text-[#1A1A1A]">{opsFacts.limpiezas}</p>
+              <p className="text-xs mt-1" style={{ color: 'rgba(26,26,26,0.3)' }}>{locale === 'en' ? 'across your units' : 'en tus apartamentos'}</p>
+            </div>
+            <div className="rounded-2xl p-5 nok-card">
+              <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'rgba(26,26,26,0.35)' }}>{locale === 'en' ? 'Beds made' : 'Camas tendidas'}</p>
+              <p className="font-serif text-4xl font-light text-[#1A1A1A]">{opsFacts.camas}</p>
+              <p className="text-xs mt-1" style={{ color: 'rgba(26,26,26,0.3)' }}>{locale === 'en' ? 'bedrooms × check-outs' : 'habitaciones × check-outs'}</p>
+            </div>
+            <div className="rounded-2xl p-5 nok-card">
+              <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'rgba(26,26,26,0.35)' }}>{locale === 'en' ? 'Incidents this month' : 'Incidencias del mes'}</p>
+              <p className="font-serif text-4xl font-light text-[#1A1A1A]">{opsFacts.incidencias}</p>
+              <p className="text-xs mt-1" style={{ color: 'rgba(26,26,26,0.3)' }}>{locale === 'en' ? 'registered and handled by NOK' : 'registradas y gestionadas por NOK'}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex flex-wrap gap-2 mb-6">

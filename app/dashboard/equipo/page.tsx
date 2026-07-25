@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { isAdminEmail } from '@/lib/admin'
 import EquipoClient from '@/components/equipo/EquipoClient'
+import { getOwnerOperationsFacts } from '@/lib/operations-facts'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,7 +21,7 @@ export default async function EquipoPage() {
 
   const isAdmin = isAdminEmail(owner.email)
 
-  const propsQuery = sb.from('properties').select('id, name').eq('active', true).order('name')
+  const propsQuery = sb.from('properties').select('id, name, bedrooms').eq('active', true).order('name')
   const [propertiesRes, ticketsRes, notificationsRes, workItemsRes] = await Promise.all([
     isAdmin ? propsQuery : propsQuery.eq('owner_id', owner.id),
     sb.from('support_tickets')
@@ -41,6 +42,15 @@ export default async function EquipoPage() {
       .limit(100),
   ])
 
+  const now = new Date()
+  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const ownProps = isAdmin ? [] : ((propertiesRes.data ?? []) as { id: string; bedrooms?: number | null }[])
+  const opsFacts = await getOwnerOperationsFacts(
+    sb,
+    ownProps.map(p => ({ id: p.id, bedrooms: (p as any).bedrooms ?? null })),
+    monthKey,
+  )
+
   return (
     <EquipoClient
       ownerName={owner.name}
@@ -48,6 +58,7 @@ export default async function EquipoPage() {
       initialTickets={ticketsRes.data ?? []}
       notifications={notificationsRes.data ?? []}
       initialWorkItems={workItemsRes.data ?? []}
+      opsFacts={opsFacts}
     />
   )
 }
