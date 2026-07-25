@@ -240,7 +240,7 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
                 href={link.href}
                 className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300"
                 style={{
-                  color: active ? '#B9B5DC' : 'rgba(26,26,26,0.45)',
+                  color: active ? '#833B0E' : 'rgba(26,26,26,0.45)',
                   backgroundColor: active ? 'rgba(131, 59, 14,0.15)' : 'transparent',
                 }}
                 onMouseEnter={e => {
@@ -269,7 +269,7 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
               href={link.href}
               className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300"
               style={{
-                color: isActive(link.href) ? '#B9B5DC' : 'rgba(26,26,26,0.45)',
+                color: isActive(link.href) ? '#833B0E' : 'rgba(26,26,26,0.45)',
                 backgroundColor: isActive(link.href) ? 'rgba(131, 59, 14,0.15)' : 'transparent',
               }}
             >

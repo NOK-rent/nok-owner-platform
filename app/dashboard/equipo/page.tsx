@@ -36,6 +36,7 @@ export default async function EquipoPage() {
     sb.from('owner_work_items')
       .select('id, tipo, titulo, descripcion, valor_usd, pdf_url, fotos, status, fecha_programada, created_at, properties(name)')
       .eq('owner_id', owner.id)
+      .neq('status', 'borrador')
       .order('created_at', { ascending: false })
       .limit(100),
   ])
