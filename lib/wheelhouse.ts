@@ -17,7 +17,7 @@ async function whFetch<T = any>(path: string, revalidate = REVALIDATE_DATA): Pro
   try {
     const res = await fetch(`${BASE}${path}`, {
       headers: { 'X-Integration-Api-Key': KEY },
-      next: { revalidate },
+      ...(revalidate > 0 ? { next: { revalidate } } : { cache: 'no-store' as const }),
     })
     if (!res.ok) return null
     return (await res.json()) as T
@@ -87,6 +87,13 @@ export interface SeasonRange {
   end: string   // ISO
 }
 
+export interface MarketPosition {
+  percentile: number          // 0-100: % of the market the unit is above
+  occupancy: number           // our month occupancy 0..1
+  monthISO: string            // first day of the month measured
+  histogram: { min: number; max: number; probability: number }[]
+}
+
 export interface RevenueSnapshot {
   tierName: string | null
   horizonDays: number | null
@@ -108,7 +115,8 @@ export interface RevenueSnapshot {
   revenueScore30: number | null   // 0-100
   occRatio30: number | null       // unit occupancy / zone occupancy
   bookings30: number | null
-  zoneOccDaily: { date: string; occ: number }[] // 0..1, next 60 days
+  zoneOccDaily: { date: string; occ: number }[] // 0..1, next 90 days
+  marketPosition: MarketPosition | null
 }
 
 // ── Humanizers ──────────────────────────────────────────────────────────────
@@ -223,7 +231,7 @@ export async function getRevenueSnapshot(guestyListingId: string, channel: Wheel
   const start = isoDaysFromNow(0)
   const end = isoDaysFromNow(90)
 
-  const [tier, kpis, prefs, lastPosted, nbPricing, nbOcc, flags, baseRec] = await Promise.all([
+  const [tier, kpis, prefs, lastPosted, nbPricing, nbOcc, flags, baseRec, listing, kpisMonthly] = await Promise.all([
     whFetch<{ name: string; horizon: number }>(`/listings/${guestyListingId}/pricing_tier?${q}`),
     whFetch<any>(`/listings/${guestyListingId}/kpis?${q}`),
     whFetch<any>(`/preferences/${guestyListingId}?${q}`),
@@ -232,6 +240,8 @@ export async function getRevenueSnapshot(guestyListingId: string, channel: Wheel
     whFetch<{ data: any[] }>(`/listings/${guestyListingId}/neighborhood/occupancy?${q}&start_date=${start}&end_date=${end}`),
     whFetch<{ name: string; description: string }[]>(`/listings/${guestyListingId}/flags?${q}`),
     whFetch<any>(`/listings/${guestyListingId}/base_price_recommendation?${q}`),
+    whFetch<any>(`/listings/${guestyListingId}?${q}`),
+    whFetch<any>(`/listings/${guestyListingId}/kpis/monthly?${q}`),
   ])
 
   // If the core listing data is missing, the property isn't in Wheelhouse (or API down)
@@ -244,7 +254,7 @@ export async function getRevenueSnapshot(guestyListingId: string, channel: Wheel
   const nbCurrency = nbPricing?.currency ?? 'USD'
   const nbRate = nbCurrency === 'USD' ? 1 : (await toUSD(1, nbCurrency))
 
-  const rateDays: RateDay[] = (nbPricing?.data ?? []).slice(0, 60).map((d: any) => ({
+  const rateDays: RateDay[] = (nbPricing?.data ?? []).slice(0, 90).map((d: any) => ({
     date: d.stay_date,
     ours: postedByDate.get(d.stay_date) ?? null,
     zoneMedian: d.median_price != null ? d.median_price * nbRate : null,
@@ -349,10 +359,41 @@ export async function getRevenueSnapshot(guestyListingId: string, channel: Wheel
       ? kpis.occupancy_adjusted['0_30'] / kpis.occupancy_neighborhood_adjusted['0_30']
       : null
 
-  const zoneOccDaily = (nbOcc?.data ?? []).slice(0, 60).map((d: any) => ({
+  const zoneOccDaily = (nbOcc?.data ?? []).slice(0, 90).map((d: any) => ({
     date: d.stay_date as string,
     occ: (typeof d.adjusted_occupancy === 'number' ? d.adjusted_occupancy : d.occupancy) as number,
   })).filter((d: any) => typeof d.occ === 'number')
+
+  // ── Market position: where this unit sits in its market's occupancy distribution ──
+  let marketPosition: MarketPosition | null = null
+  const marketId = listing?.market_id
+  const monthISO = `${today.slice(0, 7)}-01`
+  const myMonthOcc = (kpisMonthly?.data ?? []).find((m: any) => (m.month ?? '').startsWith(today.slice(0, 7)))?.occupancy_adjusted
+  if (typeof marketId === 'number' && typeof myMonthOcc === 'number') {
+    const beds = typeof listing?.num_bedrooms === 'number' ? (listing.num_bedrooms >= 4 ? '4%2B' : String(listing.num_bedrooms)) : null
+    const dist = await whFetch<any>(`/market_report/${marketId}/distribution?metric=occupancy_adjusted&month=${monthISO}${beds ? `&bedrooms=${beds}` : ''}`)
+    const buckets = dist?.data?.occupancy_adjusted
+    if (Array.isArray(buckets) && buckets.length) {
+      let pct: number | null = null
+      for (const b of buckets) {
+        if (myMonthOcc >= b.bucket_min_incl && myMonthOcc < b.bucket_max_excl) {
+          const before = b.percentile - b.probability
+          const frac = (myMonthOcc - b.bucket_min_incl) / (b.bucket_max_excl - b.bucket_min_incl || 1)
+          pct = (before + b.probability * frac) * 100
+          break
+        }
+      }
+      if (pct == null && myMonthOcc >= buckets[buckets.length - 1].bucket_max_excl) pct = 100
+      if (pct != null) {
+        marketPosition = {
+          percentile: Math.round(pct),
+          occupancy: myMonthOcc,
+          monthISO,
+          histogram: buckets.map((b: any) => ({ min: b.bucket_min_incl, max: b.bucket_max_excl, probability: b.probability })),
+        }
+      }
+    }
+  }
 
   return {
     tierName: tier?.name ?? null,
@@ -375,5 +416,42 @@ export async function getRevenueSnapshot(guestyListingId: string, channel: Wheel
     occRatio30,
     bookings30: typeof kpis?.bookings?.['0_30'] === 'number' ? kpis.bookings['0_30'] : null,
     zoneOccDaily,
+    marketPosition,
   }
+}
+
+// ── Extras for the Strategy tab & rate-change tracking ──────────────────────
+
+export interface BasePriceHistoryPoint {
+  date: string        // model_date
+  recommended: number // engine recommendation before our adjustment
+  applied: number     // effective base price actually used
+}
+
+/** Evolution of the engine's base price recommendation vs. what we applied. */
+export async function getBasePriceHistory(listingId: string, channel: WheelhouseChannel = 'guesty'): Promise<BasePriceHistoryPoint[]> {
+  const rows = await whFetch<any[]>(`/listings/${listingId}/base_price_history?channel=${channel}`)
+  if (!Array.isArray(rows)) return []
+  return rows
+    .filter(r => typeof r?.recommendation === 'number' && typeof r?.effective_base_price === 'number' && r?.model_date)
+    .map(r => ({ date: r.model_date as string, recommended: r.recommendation as number, applied: Math.round(r.effective_base_price) }))
+}
+
+/** How many times the engine published prices in the last N days (activity signal). */
+export async function getPostingCount(listingId: string, channel: WheelhouseChannel = 'guesty', days = 7): Promise<number | null> {
+  const log = await whFetch<{ events: { time: string; event: string }[] }>(`/preferences/${listingId}/changelog?channel=${channel}`)
+  if (!Array.isArray(log?.events)) return null
+  const cutoff = new Date(Date.now() - days * 86400000).toISOString()
+  return log.events.filter(e => e.event === 'Prices posted' && e.time >= cutoff).length
+}
+
+/** Fresh (uncached) map of stay_date → last posted price. Used by the rate-watch cron. */
+export async function getLastPostedMap(listingId: string, channel: WheelhouseChannel = 'guesty'): Promise<Record<string, number> | null> {
+  const rows = await whFetch<any[]>(`/listings/${listingId}/last_posted_prices?channel=${channel}`, 0)
+  if (!Array.isArray(rows)) return null
+  const map: Record<string, number> = {}
+  for (const r of rows) {
+    if (r?.stay_date && typeof r?.last_posted_price === 'number') map[r.stay_date] = r.last_posted_price
+  }
+  return map
 }

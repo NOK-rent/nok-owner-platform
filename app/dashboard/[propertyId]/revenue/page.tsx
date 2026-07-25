@@ -1,8 +1,12 @@
 import { notFound } from 'next/navigation'
 import { loadOwnerProperty } from '@/lib/admin'
-import { getRevenueSnapshot, resolveWheelhouseRef, type RateDay, type OccWindow, type BasePriceBreakdown, type SeasonRange } from '@/lib/wheelhouse'
+import {
+  getRevenueSnapshot, resolveWheelhouseRef, getBasePriceHistory, getPostingCount,
+  type OccWindow, type BasePriceBreakdown, type SeasonRange, type MarketPosition, type BasePriceHistoryPoint,
+} from '@/lib/wheelhouse'
 import { getLocale } from '@/lib/i18n'
 import { snapshotToEnglish, FLAG_EN } from '@/lib/strategy-i18n'
+import { RateChartInteractive, OccDailyChartInteractive } from '@/components/dashboard/StrategyCharts'
 
 interface Props {
   params: Promise<{ propertyId: string }>
@@ -45,91 +49,65 @@ const FLAG_ES: Record<string, { title: string; text: string }> = {
   },
 }
 
-// ── Server-rendered SVG chart: our rate vs zone ─────────────────────────────
+// ── Server-rendered SVG: market occupancy histogram with our marker ─────────
 
-function RateChart({ days }: { days: RateDay[] }) {
-  const W = 860, H = 280, P = { t: 12, r: 12, b: 28, l: 46 }
-  const pts = days.filter(d => d.zoneMedian != null)
-  if (pts.length < 7) return null
-  const ys = pts.flatMap(d => [d.zoneLow, d.zoneHigh, d.ours, d.zoneMedian]).filter((v): v is number => v != null)
-  const step = Math.max(25, Math.ceil((Math.max(...ys) - Math.min(...ys)) / 200) * 50)
-  const yMin = Math.floor(Math.min(...ys) / step) * step
-  const yMax = Math.ceil(Math.max(...ys) / step) * step
-  const x = (i: number) => P.l + (i * (W - P.l - P.r)) / (pts.length - 1)
-  const y = (v: number) => P.t + (H - P.t - P.b) * (1 - (v - yMin) / (yMax - yMin || 1))
-
-  const line = (key: 'ours' | 'zoneMedian') =>
-    pts.map((d, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y((d[key] ?? d.zoneMedian) as number).toFixed(1)}`).join('')
-
-  const band =
-    pts.map((d, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y((d.zoneHigh ?? d.zoneMedian) as number).toFixed(1)}`).join('') +
-    [...pts].reverse().map((d, i) => `L${x(pts.length - 1 - i).toFixed(1)},${y((d.zoneLow ?? d.zoneMedian) as number).toFixed(1)}`).join('') +
-    'Z'
-
-  const gridVals: number[] = []
-  for (let v = yMin; v <= yMax; v += step) gridVals.push(v)
+function MarketHistogram({ mp }: { mp: MarketPosition }) {
+  const W = 420, H = 150, P = { t: 10, r: 8, b: 22, l: 8 }
+  const buckets = mp.histogram
+  if (!buckets.length) return null
+  const maxP = Math.max(...buckets.map(b => b.probability), 0.01)
+  const bw = (W - P.l - P.r) / buckets.length
+  const x = (i: number) => P.l + i * bw
+  const h = (p: number) => Math.max(2, ((H - P.t - P.b) * p) / maxP)
+  const ourI = buckets.findIndex(b => mp.occupancy >= b.min && mp.occupancy < b.max)
+  const markerX = ourI >= 0 ? x(ourI) + bw / 2 : W - P.r
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label="Tu tarifa comparada con la mediana y el rango de la zona">
-      {gridVals.map(v => (
-        <g key={v}>
-          <line x1={P.l} x2={W - P.r} y1={y(v)} y2={y(v)} stroke="rgba(26,26,26,0.07)" strokeWidth={1} />
-          <text x={P.l - 8} y={y(v) + 4} textAnchor="end" fontSize={11} fill="rgba(26,26,26,0.35)">${v}</text>
-        </g>
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label="Distribución de ocupación del mercado con la posición de tu unidad">
+      {buckets.map((b, i) => (
+        <rect
+          key={b.min}
+          x={x(i) + 1}
+          y={H - P.b - h(b.probability)}
+          width={Math.max(2, bw - 2)}
+          height={h(b.probability)}
+          rx={2}
+          fill={i === ourI ? '#0E6845' : 'rgba(0,128,198,0.35)'}
+        />
       ))}
-      {pts.map((d, i) =>
-        i % 10 === 0 ? (
-          <text key={d.date} x={x(i)} y={H - 8} textAnchor="middle" fontSize={11} fill="rgba(26,26,26,0.35)">
-            {fmtDay(d.date)}
-          </text>
-        ) : null,
-      )}
-      <path d={band} fill="rgba(148,184,207,0.14)" />
-      <path d={line('zoneMedian')} fill="none" stroke="#0080C6" strokeWidth={2} strokeLinejoin="round" />
-      <path d={line('ours')} fill="none" stroke="#0E6845" strokeWidth={2.5} strokeLinejoin="round" />
+      <line x1={markerX} x2={markerX} y1={P.t} y2={H - P.b} stroke="#0E6845" strokeWidth={2} strokeDasharray="4 3" />
+      <text x={P.l} y={H - 6} fontSize={10} fill="rgba(26,26,26,0.35)">0%</text>
+      <text x={W - P.r} y={H - 6} textAnchor="end" fontSize={10} fill="rgba(26,26,26,0.35)">100%</text>
     </svg>
   )
 }
 
-/** Daily zone occupancy line + our booked nights strip (next 60 days) */
-function OccDailyChart({ zone, booked }: { zone: { date: string; occ: number }[]; booked: Set<string> }) {
-  const W = 860, H = 240, P = { t: 12, r: 12, b: 52, l: 46 }
-  if (zone.length < 7) return null
-  const x = (i: number) => P.l + (i * (W - P.l - P.r)) / (zone.length - 1)
-  const y = (v: number) => P.t + (H - P.t - P.b) * (1 - v)
-  const line = zone.map((d, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(d.occ).toFixed(1)}`).join('')
-  const area = line + `L${x(zone.length - 1).toFixed(1)},${y(0)}L${x(0).toFixed(1)},${y(0)}Z`
-  const stripY = H - P.b + 18
-  const bw = (W - P.l - P.r) / zone.length
+// ── Server-rendered SVG: base price recommendation vs applied over time ─────
 
+function BaseHistoryChart({ points }: { points: BasePriceHistoryPoint[] }) {
+  const pts = points.slice(-60)
+  if (pts.length < 5) return null
+  const W = 420, H = 170, P = { t: 10, r: 10, b: 22, l: 40 }
+  const ys = pts.flatMap(p => [p.recommended, p.applied])
+  const yMin = Math.floor(Math.min(...ys) / 10) * 10
+  const yMax = Math.ceil(Math.max(...ys) / 10) * 10
+  const x = (i: number) => P.l + (i * (W - P.l - P.r)) / (pts.length - 1)
+  const y = (v: number) => P.t + (H - P.t - P.b) * (1 - (v - yMin) / (yMax - yMin || 1))
+  const line = (key: 'recommended' | 'applied') =>
+    pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p[key]).toFixed(1)}`).join('')
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label="Ocupación diaria de la zona y tus noches ya reservadas">
-      {[0, 0.25, 0.5, 0.75, 1].map(v => (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label="Evolución del precio base recomendado y aplicado">
+      {[yMin, (yMin + yMax) / 2, yMax].map(v => (
         <g key={v}>
           <line x1={P.l} x2={W - P.r} y1={y(v)} y2={y(v)} stroke="rgba(26,26,26,0.07)" strokeWidth={1} />
-          <text x={P.l - 8} y={y(v) + 4} textAnchor="end" fontSize={11} fill="rgba(26,26,26,0.35)">{Math.round(v * 100)}%</text>
+          <text x={P.l - 6} y={y(v) + 4} textAnchor="end" fontSize={10} fill="rgba(26,26,26,0.35)">${Math.round(v)}</text>
         </g>
       ))}
-      {zone.map((d, i) =>
-        i % 10 === 0 ? (
-          <text key={d.date} x={x(i)} y={H - 26} textAnchor="middle" fontSize={11} fill="rgba(26,26,26,0.35)">{fmtDay(d.date)}</text>
-        ) : null,
-      )}
-      <path d={area} fill="rgba(61,155,209,0.10)" />
-      <path d={line} fill="none" stroke="#0080C6" strokeWidth={2} strokeLinejoin="round" />
-      {/* booked strip */}
-      <text x={P.l - 8} y={stripY + 8} textAnchor="end" fontSize={10} fill="rgba(26,26,26,0.35)">{EN ? 'Your nights' : 'Tus noches'}</text>
-      {zone.map((d, i) => (
-        <rect
-          key={d.date}
-          x={x(i) - bw / 2 + 0.5}
-          y={stripY}
-          width={Math.max(1.5, bw - 1)}
-          height={10}
-          rx={2}
-          fill={booked.has(d.date) ? '#0E6845' : 'rgba(26,26,26,0.08)'}
-        />
+      {[0, Math.floor(pts.length / 2), pts.length - 1].map(i => (
+        <text key={i} x={x(i)} y={H - 6} textAnchor={i === 0 ? 'start' : i === pts.length - 1 ? 'end' : 'middle'} fontSize={10} fill="rgba(26,26,26,0.35)">{fmtDay(pts[i].date)}</text>
       ))}
+      <path d={line('recommended')} fill="none" stroke="#0080C6" strokeWidth={1.8} strokeDasharray="5 4" strokeLinejoin="round" />
+      <path d={line('applied')} fill="none" stroke="#0E6845" strokeWidth={2.2} strokeLinejoin="round" />
     </svg>
   )
 }
@@ -223,8 +201,22 @@ export default async function RevenuePage({ params }: Props) {
   EN = locale === 'en'
 
   const whRef = resolveWheelhouseRef(property)
-  const snapEs = whRef ? await getRevenueSnapshot(whRef.id, whRef.channel) : null
+  const [snapEs, baseHistory, postingCount7d] = whRef
+    ? await Promise.all([
+        getRevenueSnapshot(whRef.id, whRef.channel),
+        getBasePriceHistory(whRef.id, whRef.channel),
+        getPostingCount(whRef.id, whRef.channel, 7),
+      ])
+    : [null, [] as BasePriceHistoryPoint[], null]
   const snap = snapEs && EN ? snapshotToEnglish(snapEs) : snapEs
+
+  // Recent rate-change events recorded by the rate-watch cron
+  const { data: rateEvents } = await sb
+    .from('rate_change_events')
+    .select('stay_date, old_price, new_price, detected_at')
+    .eq('property_id', propertyId)
+    .order('detected_at', { ascending: false })
+    .limit(20)
 
   // Our booked nights (next 60 days) from the portal's own reservations
   const today = new Date().toISOString().slice(0, 10)
@@ -320,11 +312,11 @@ export default async function RevenuePage({ params }: Props) {
                     <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-2.5 rounded-sm" style={{ backgroundColor: 'rgba(148,184,207,0.25)' }} /> {EN ? 'Area range' : 'Rango de la zona'}</span>
                   </div>
                 </div>
-                <RateChart days={snap.rateDays} />
+                <RateChartInteractive days={snap.rateDays} en={EN} />
                 <p className="text-xs mt-3" style={{ color: 'rgba(26,26,26,0.35)' }}>
                   {EN
-                    ? `Next ${Math.min(60, snap.rateDays.length)} nights, in USD. The area is the set of comparable properties around your unit.`
-                    : `Próximas ${Math.min(60, snap.rateDays.length)} noches, en USD. La zona son las propiedades comparables alrededor de tu unidad.`}
+                    ? 'In USD. Hover over the chart to see each night. The area is the set of comparable properties around your unit.'
+                    : 'En USD. Pasa el cursor por el gráfico para ver cada noche. La zona son las propiedades comparables alrededor de tu unidad.'}
                 </p>
               </div>
             )}
@@ -339,7 +331,7 @@ export default async function RevenuePage({ params }: Props) {
                     <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-2.5 rounded-sm" style={{ backgroundColor: '#0E6845' }} /> {EN ? 'Your booked nights' : 'Tus noches reservadas'}</span>
                   </div>
                 </div>
-                <OccDailyChart zone={snap.zoneOccDaily} booked={bookedDays} />
+                <OccDailyChartInteractive zone={snap.zoneOccDaily} booked={[...bookedDays]} en={EN} />
                 <p className="text-xs mt-3" style={{ color: 'rgba(26,26,26,0.35)' }}>
                   {EN
                     ? 'The line shows what share of comparable properties is already booked for each night. The green strip is your sold nights: every green night over a low-occupancy area is a night we won from the market.'
@@ -429,6 +421,101 @@ export default async function RevenuePage({ params }: Props) {
                 </div>
               </div>
             )}
+
+            {/* Market position + base price evolution */}
+            {(snap.marketPosition || baseHistory.length >= 5) && (
+              <div className="grid lg:grid-cols-2 gap-4 items-start">
+                {snap.marketPosition && (
+                  <div className="rounded-2xl p-6 nok-card">
+                    <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-1">{EN ? 'Your position in the market' : 'Tu posición en el mercado'}</h2>
+                    <p className="text-sm mb-4" style={{ color: 'rgba(26,26,26,0.45)' }}>
+                      {(() => {
+                        const [y, m] = snap.marketPosition.monthISO.split('-')
+                        const mes = EN
+                          ? new Date(+y, +m - 1, 1).toLocaleDateString('en-US', { month: 'long' })
+                          : MESES_LARGOS[+m - 1]
+                        return EN
+                          ? `Occupancy in ${mes}: your unit is above ${snap.marketPosition.percentile}% of comparable listings in its market.`
+                          : `Ocupación de ${mes}: tu unidad está por encima del ${snap.marketPosition.percentile}% de las propiedades comparables de su mercado.`
+                      })()}
+                    </p>
+                    <div className="flex items-end gap-5 mb-3">
+                      <p className="font-serif text-5xl font-light" style={{ color: '#0E6845' }}>
+                        {EN ? `Top ${Math.max(1, 100 - snap.marketPosition.percentile)}%` : `Top ${Math.max(1, 100 - snap.marketPosition.percentile)}%`}
+                      </p>
+                      <p className="text-sm pb-1" style={{ color: 'rgba(26,26,26,0.45)' }}>
+                        {EN ? `with ${Math.round(snap.marketPosition.occupancy * 100)}% occupancy` : `con ${Math.round(snap.marketPosition.occupancy * 100)}% de ocupación`}
+                      </p>
+                    </div>
+                    <MarketHistogram mp={snap.marketPosition} />
+                    <p className="text-xs mt-2" style={{ color: 'rgba(26,26,26,0.35)' }}>
+                      {EN
+                        ? 'Each bar is a share of the market by occupancy level. The green bar is where your unit sits this month.'
+                        : 'Cada barra es una porción del mercado según su nivel de ocupación. La barra verde es donde está tu unidad este mes.'}
+                    </p>
+                  </div>
+                )}
+                {baseHistory.length >= 5 && (
+                  <div className="rounded-2xl p-6 nok-card">
+                    <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-1">{EN ? 'Base price over time' : 'Evolución del precio base'}</h2>
+                    <p className="text-sm mb-4" style={{ color: 'rgba(26,26,26,0.45)' }}>
+                      {EN
+                        ? 'How the engine recommendation has moved, and the base we actually applied.'
+                        : 'Cómo se ha movido la recomendación del motor, y la base que realmente aplicamos.'}
+                    </p>
+                    <BaseHistoryChart points={baseHistory} />
+                    <div className="flex gap-5 mt-2 text-xs" style={{ color: 'rgba(26,26,26,0.45)' }}>
+                      <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-0.5 rounded-full" style={{ backgroundColor: '#0E6845' }} /> {EN ? 'Applied' : 'Aplicado'}</span>
+                      <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-0.5 rounded-full border-b border-dashed" style={{ borderColor: '#0080C6' }} /> {EN ? 'Recommended' : 'Recomendado'}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Recent rate changes feed */}
+            <div className="rounded-2xl p-6 nok-card">
+              <div className="flex flex-wrap items-baseline justify-between gap-3 mb-1">
+                <h2 className="font-serif text-2xl font-light text-[#1A1A1A]">{EN ? 'Recent rate changes' : 'Cambios recientes de tarifa'}</h2>
+                {postingCount7d != null && postingCount7d > 0 && (
+                  <p className="text-xs" style={{ color: 'rgba(26,26,26,0.45)' }}>
+                    {EN
+                      ? `The engine published prices ${postingCount7d} time${postingCount7d > 1 ? 's' : ''} in the last 7 days`
+                      : `El motor publicó precios ${postingCount7d} ${postingCount7d > 1 ? 'veces' : 'vez'} en los últimos 7 días`}
+                  </p>
+                )}
+              </div>
+              {(rateEvents ?? []).length === 0 ? (
+                <p className="text-sm mt-3" style={{ color: 'rgba(26,26,26,0.5)' }}>
+                  {EN
+                    ? 'Monitoring is active. Every time the engine moves a nightly rate, the change will show up here so you always know what is being adjusted.'
+                    : 'El monitoreo está activo. Cada vez que el motor mueva la tarifa de una noche, el cambio va a aparecer aquí para que siempre sepas qué se está ajustando.'}
+                </p>
+              ) : (
+                <div className="mt-3 divide-y" style={{ borderColor: 'rgba(26,26,26,0.06)' }}>
+                  {(rateEvents ?? []).map((e: any, i: number) => {
+                    const up = e.new_price > (e.old_price ?? 0)
+                    const pct = e.old_price ? Math.round(((e.new_price - e.old_price) / e.old_price) * 100) : null
+                    return (
+                      <div key={i} className="flex items-center justify-between gap-4 py-2.5 text-sm" style={{ borderColor: 'rgba(26,26,26,0.06)' }}>
+                        <span style={{ color: 'rgba(26,26,26,0.65)' }}>
+                          {EN ? 'Night of' : 'Noche del'} <span className="font-medium text-[#1A1A1A]">{fmtDay(e.stay_date)}</span>
+                        </span>
+                        <span className="flex items-center gap-2 tabular-nums whitespace-nowrap">
+                          <span style={{ color: 'rgba(26,26,26,0.4)' }}>${Math.round(e.old_price ?? 0)}</span>
+                          <span style={{ color: 'rgba(26,26,26,0.3)' }}>→</span>
+                          <span className="font-medium" style={{ color: up ? '#0E6845' : '#833B0E' }}>${Math.round(e.new_price)}</span>
+                          {pct != null && pct !== 0 && (
+                            <span className="text-xs" style={{ color: up ? '#0E6845' : '#833B0E' }}>({pct > 0 ? '+' : ''}{pct}%)</span>
+                          )}
+                          <span className="text-xs" style={{ color: 'rgba(26,26,26,0.35)' }}>· {fmtDay(String(e.detected_at).slice(0, 10))}</span>
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
 
             {/* How the engine responds to demand */}
             <div>

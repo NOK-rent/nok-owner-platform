@@ -25,3 +25,10 @@ tema claro (#F0EFED / cards blancas / texto #1A1A1A), acento Earth #833B0E.
 ## Sesión: Notificaciones/AI knowledge base (previa, sin commitear)
 Archivos: app/api/chat, app/api/sync/guesty, lib/ai/*, app/admin/notifications,
 app/api/admin, app/api/notifications, NotificationsBanner, migrations 023/024.
+
+## Sesión: Revenue/Wheelhouse + NOK AI (2026-07-23 → 25) — COMMITEADO, DEPLOYADO fb973fc
+- `lib/wheelhouse.ts`: cliente RM API. `resolveWheelhouseRef()`: `properties.wheelhouse_property_id` (prefijo `airbnb:` para canal airbnb) con fallback `guesty_listing_id`. 9 propiedades mapeadas así en DB.
+- Página revenue/Strategy: ya integrada al restyle claro + bilingüe por la sesión de features ✓.
+- NOK AI: nuevo tool `getRevenueStrategy` (snapshot Wheelhouse en vivo) en `lib/ai/tools.ts` + registrado en chat route + guía en system-prompt (vocabulario: "Revenue Management NOK", "zona" no "barrio").
+- fix build fb973fc: quité `NotificationsBanner` del overview — d48effc decía incluirlo pero el archivo NUNCA se agregó a git (sigue untracked). Cuando se commitee el componente + APIs + migración 024, re-agregar el banner al overview.
+- Deploys: manual `git archive HEAD` → tmp → `vercel deploy --prod` (NUNCA working tree directo — siempre hay WIP de otras sesiones).
