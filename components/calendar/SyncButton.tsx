@@ -28,7 +28,7 @@ export default function SyncButton({ propertyId }: { propertyId: string }) {
   return (
     <div className="flex items-center gap-3">
       {msg && (
-        <span className="text-xs" style={{ color: state === 'error' ? '#F20022' : 'rgba(242,242,242,0.4)' }}>
+        <span className="text-xs" style={{ color: state === 'error' ? '#F20022' : 'rgba(26,26,26,0.4)' }}>
           {msg}
         </span>
       )}
@@ -37,7 +37,7 @@ export default function SyncButton({ propertyId }: { propertyId: string }) {
         disabled={state === 'loading' || state === 'done'}
         className="text-sm px-4 py-2 rounded-xl flex items-center gap-2 transition-all duration-200 disabled:opacity-50 cursor-pointer"
         style={{
-          color: '#B9B5DC',
+          color: '#833B0E',
           border: '1px solid rgba(131, 59, 14,0.3)',
           backgroundColor: 'rgba(131, 59, 14,0.08)',
         }}

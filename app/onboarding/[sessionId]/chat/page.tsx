@@ -132,7 +132,7 @@ export default function OnboardingChatPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-[#F0EFED] flex flex-col">
       {/* Header */}
       <header className="border-b border-[#EFEFEF] px-6 py-4 flex items-center justify-between flex-shrink-0">
         <Image src="/brand/nok-logo-dark.png" alt="NOK" width={110} height={30} priority />
@@ -148,10 +148,10 @@ export default function OnboardingChatPage() {
                 {i > 0 && <span className="w-5 h-px bg-[#EFEFEF]" />}
                 <span className={`w-6 h-6 rounded-full flex items-center justify-center font-semibold text-xs ${
                   isDone ? 'bg-[#0080C6] text-white' :
-                  isActive ? 'bg-[#1D1D1B] text-white' :
+                  isActive ? 'bg-[#1A1A1A] text-white' :
                   'bg-[#EFEFEF] text-[#8A8A8A]'
                 }`}>{stepNum}</span>
-                <span className={`${isActive ? 'text-[#1D1D1B] font-medium' : 'text-[#C8C8C8]'}`}>{step}</span>
+                <span className={`${isActive ? 'text-[#1A1A1A] font-medium' : 'text-[#C8C8C8]'}`}>{step}</span>
               </div>
             )
           })}
@@ -170,8 +170,8 @@ export default function OnboardingChatPage() {
             <div
               className={`max-w-sm rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                 msg.role === 'user'
-                  ? 'bg-[#1D1D1B] text-white rounded-tr-sm'
-                  : 'bg-[#F7F7F7] text-[#1D1D1B] rounded-tl-sm'
+                  ? 'bg-[#1A1A1A] text-white rounded-tr-sm'
+                  : 'bg-[#F7F7F7] text-[#1A1A1A] rounded-tl-sm'
               }`}
             >
               {msg.attachments && (

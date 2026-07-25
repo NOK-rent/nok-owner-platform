@@ -1,27 +1,96 @@
 @import "tailwindcss";
 
-/* ─── NOK Brand Tokens ───────────────────────────────────────── */
+/* ─── NOK Fonts (mismas de nok.rent) ─────────────────────────── */
+@font-face {
+  font-family: "Aeonik";
+  src: url("/fonts/aeonik/AeonikTRIAL-Light.otf") format("opentype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Aeonik";
+  src: url("/fonts/aeonik/AeonikTRIAL-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Aeonik";
+  src: url("/fonts/aeonik/AeonikTRIAL-Regular.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Aeonik";
+  src: url("/fonts/aeonik/AeonikTRIAL-Bold.otf") format("opentype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Aeonik";
+  src: url("/fonts/aeonik/AeonikTRIAL-Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Hedvig Letters Serif";
+  src: url("/fonts/hedvig/HedvigLettersSerif-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ─── NOK Brand Tokens (sistema nok.rent, tema claro) ────────── */
 :root {
-  --nok-bg:            #1D1D1B;
-  --nok-surface:       #141413;
-  --nok-surface-el:    #1E1E1C;
-  --nok-surface-hover: #252523;
-  --nok-text:          #F2F2F2;
-  --nok-text-muted:    rgba(242, 242, 242, 0.45);
-  --nok-text-subtle:   rgba(242, 242, 242, 0.22);
+  --nok-bg:            #F0EFED;
+  --nok-surface:       #FFFFFF;
+  --nok-surface-el:    #FFFFFF;
+  --nok-surface-hover: #E9E7E2;
+  --nok-text:          #1A1A1A;
+  --nok-text-muted:    rgba(26, 26, 26, 0.55);
+  --nok-text-subtle:   rgba(26, 26, 26, 0.35);
   --nok-accent:        #833B0E;
-  --nok-accent-hover:  #a04d1c;
+  --nok-accent-hover:  #6B3009;
   --nok-earth:         #833B0E;
+  --nok-selva:         #0E6845;
   --nok-sunset:        #D6A700;
   --nok-gold:          #D6A700;
+  --nok-ocean:         #0080C6;
+  --nok-sky:           #94B8CF;
   --nok-timeless:      #F0EFED;
   --nok-serenity:      #B9B5DC;
   --nok-success:       #0E6845;
   --nok-danger:        #F20022;
   --nok-boldness:      #F20022;
-  --nok-border:        rgba(242, 242, 242, 0.07);
+  --nok-gray-light:    #E5E3DF;
+  --nok-border:        rgba(26, 26, 26, 0.08);
   --nok-border-accent: rgba(131, 59, 14, 0.35);
-  --nok-input-border:  #DDDDDD;
+  --nok-input-border:  rgba(26, 26, 26, 0.18);
+  --font-primary:      "Aeonik", system-ui, -apple-system, sans-serif;
+  --font-secondary:    "Hedvig Letters Serif", Georgia, serif;
+}
+
+@theme {
+  --color-nok-bg: #F0EFED;
+  --color-nok-black: #1A1A1A;
+  --color-nok-white: #FFFFFF;
+  --color-nok-gray: #888888;
+  --color-nok-gray-light: #E5E3DF;
+  --color-selva: #0E6845;
+  --color-selva-dark: #0A5438;
+  --color-earth: #833B0E;
+  --color-sunset: #D6A700;
+  --color-ocean: #0080C6;
+  --color-luxury: #4D439E;
+  --color-boldness: #F20022;
+  --color-sky: #94B8CF;
+  --color-serenity: #B9B5DC;
+  --font-primary: "Aeonik", system-ui, -apple-system, sans-serif;
+  --font-secondary: "Hedvig Letters Serif", Georgia, serif;
 }
 
 /* ─── Skeleton shimmer ───────────────────────────────────────── */
@@ -32,9 +101,9 @@
 .skeleton {
   background: linear-gradient(
     90deg,
-    var(--nok-surface) 0%,
-    var(--nok-surface-hover) 50%,
-    var(--nok-surface) 100%
+    var(--nok-gray-light) 0%,
+    #F7F6F4 50%,
+    var(--nok-gray-light) 100%
   );
   background-size: 800px 100%;
   animation: skeleton-shimmer 1.4s ease-in-out infinite;
@@ -47,14 +116,62 @@ html { scroll-behavior: smooth; }
 body {
   background-color: var(--nok-bg);
   color: var(--nok-text);
-  font-family: var(--font-inter, 'Inter', 'Helvetica Neue', Arial, sans-serif);
+  font-family: var(--font-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ─── Typography helpers ─────────────────────────────────────── */
+/* ─── Typography helpers (sistema nok.rent) ──────────────────── */
 .font-serif {
-  font-family: var(--font-cormorant, 'Georgia', serif);
+  font-family: var(--font-secondary);
+}
+
+.h1 {
+  font-family: var(--font-primary);
+  font-weight: 400;
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+.h2 {
+  font-family: var(--font-primary);
+  font-weight: 400;
+  font-size: clamp(1.75rem, 3.5vw, 3rem);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+.h3 {
+  font-family: var(--font-secondary);
+  font-weight: 400;
+  font-size: clamp(1.5rem, 2.5vw, 2.25rem);
+  line-height: 1.25;
+}
+.h-card {
+  font-family: var(--font-primary);
+  font-weight: 400;
+  font-size: clamp(1.0625rem, 1.4vw, 1.25rem);
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+.label {
+  font-family: var(--font-primary);
+  font-size: 0.6875rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+.btn-text {
+  font-family: var(--font-primary);
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.detail {
+  font-family: var(--font-secondary);
+  font-size: 0.9375rem;
 }
 
 /* ─── Animations ─────────────────────────────────────────────── */
@@ -79,14 +196,15 @@ body {
   50%       { border-color: rgba(131, 59, 14, 0.7); }
 }
 
+/* Hero oscuro (como heros de nok.rent: bloque negro sobre página clara) */
 .hero-shimmer {
   background: linear-gradient(
     135deg,
-    #1D1D1B 0%,
+    #1A1A1A 0%,
     #2a1409 25%,
     #3d1a0c 45%,
     #2a1409 65%,
-    #1D1D1B 100%
+    #1A1A1A 100%
   );
   background-size: 400% 400%;
   animation: shimmer-purple 10s ease infinite;
@@ -98,7 +216,7 @@ body {
     #833B0E 0%,
     #5f2a0a 35%,
     #3d1807 60%,
-    #1D1D1B 100%
+    #1A1A1A 100%
   );
   background-size: 300% 300%;
   animation: shimmer-purple 7s ease infinite;
@@ -111,9 +229,9 @@ body {
 
 /* ─── Scrollbar ──────────────────────────────────────────────── */
 ::-webkit-scrollbar         { width: 5px; height: 5px; }
-::-webkit-scrollbar-track   { background: var(--nok-surface); }
-::-webkit-scrollbar-thumb   { background: rgba(131, 59, 14,0.4); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(131, 59, 14,0.65); }
+::-webkit-scrollbar-track   { background: transparent; }
+::-webkit-scrollbar-thumb   { background: rgba(26, 26, 26, 0.25); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(26, 26, 26, 0.4); }
 
 /* ─── Nok card hover ─────────────────────────────────────────── */
 .nok-card {
@@ -123,8 +241,8 @@ body {
 }
 
 .nok-card:hover {
-  border-color: rgba(131, 59, 14, 0.4);
-  box-shadow: 0 0 0 1px rgba(131, 59, 14,0.2), 0 8px 32px rgba(0,0,0,0.35);
+  border-color: rgba(131, 59, 14, 0.35);
+  box-shadow: 0 8px 24px rgba(26, 26, 26, 0.06);
 }
 
 /* ─── Property card ──────────────────────────────────────────── */
@@ -138,6 +256,6 @@ body {
   transition: border-color 0.35s ease, box-shadow 0.35s ease;
 }
 .property-card:hover {
-  border-color: rgba(131, 59, 14,0.5) !important;
-  box-shadow: 0 0 0 1px rgba(131, 59, 14,0.25), 0 16px 48px rgba(0,0,0,0.4);
+  border-color: rgba(131, 59, 14, 0.4) !important;
+  box-shadow: 0 12px 32px rgba(26, 26, 26, 0.08);
 }

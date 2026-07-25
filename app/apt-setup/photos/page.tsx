@@ -118,9 +118,9 @@ export default function PhotosPage() {
 
   const statusBadge = (status: PhotoResult['overall_status']) => {
     const config = {
-      approved: { bg: 'bg-[#0E6845]/20', text: 'text-[#34D399]', label: 'Aprobado' },
+      approved: { bg: 'bg-[#0E6845]/20', text: 'text-[#0E6845]', label: 'Aprobado' },
       needs_review: { bg: 'bg-[#D6A700]/20', text: 'text-[#D6A700]', label: 'Revisar' },
-      rejected: { bg: 'bg-[#F20022]/20', text: 'text-[#F87171]', label: 'No cumple' },
+      rejected: { bg: 'bg-[#F20022]/20', text: 'text-[#F20022]', label: 'No cumple' },
     }
     const c = config[status]
     return <span className={`${c.bg} ${c.text} text-xs font-medium px-2.5 py-1 rounded-full`}>{c.label}</span>
@@ -134,10 +134,10 @@ export default function PhotosPage() {
     <div className="space-y-8">
       <div className="text-center sm:text-left">
         <p className="text-[#D6A700] text-xs font-semibold tracking-[0.2em] uppercase mb-2">Paso 2</p>
-        <h1 className="font-[family-name:var(--font-cormorant)] text-3xl sm:text-4xl font-light mb-2">
+        <h1 className="font-[family-name:var(--font-secondary)] text-3xl sm:text-4xl font-light mb-2">
           Verificación con fotos
         </h1>
-        <p className="text-[rgba(242,242,242,0.45)] text-sm">
+        <p className="text-[rgba(26,26,26,0.45)] text-sm">
           Sube fotos de cada espacio para verificar que muebles y decoración cumplan estándares NOK.
         </p>
       </div>
@@ -155,14 +155,14 @@ export default function PhotosPage() {
               onClick={() => setActiveCategory(cat.key)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
                 isActive
-                  ? 'bg-[#F2F2F2] text-[#1D1D1B]'
-                  : 'bg-[#1E1E1C] text-[rgba(242,242,242,0.5)] hover:text-[#F2F2F2] border border-[rgba(242,242,242,0.08)]'
+                  ? 'bg-[#1A1A1A] text-[#F0EFED]'
+                  : 'bg-[#FFFFFF] text-[rgba(26,26,26,0.5)] hover:text-[#1A1A1A] border border-[rgba(26,26,26,0.08)]'
               }`}
             >
               <span>{cat.icon}</span>
               {cat.label}
               {doneCount > 0 && (
-                <span className={`text-xs px-1.5 py-0.5 rounded-full ${isActive ? 'bg-[#1D1D1B]/10 text-[#1D1D1B]' : 'bg-[#D6A700]/20 text-[#D6A700]'}`}>
+                <span className={`text-xs px-1.5 py-0.5 rounded-full ${isActive ? 'bg-[#F0EFED]/10 text-[#F0EFED]' : 'bg-[#D6A700]/20 text-[#D6A700]'}`}>
                   {doneCount}
                 </span>
               )}
@@ -175,7 +175,7 @@ export default function PhotosPage() {
       <div
         onDragOver={e => { e.preventDefault(); e.stopPropagation() }}
         onDrop={e => handleDrop(e, activeCategory)}
-        className="border-2 border-dashed border-[rgba(242,242,242,0.1)] rounded-2xl p-8 text-center hover:border-[#D6A700]/40 transition-colors cursor-pointer"
+        className="border-2 border-dashed border-[rgba(26,26,26,0.1)] rounded-2xl p-8 text-center hover:border-[#D6A700]/40 transition-colors cursor-pointer"
         onClick={() => {
           const input = document.createElement('input')
           input.type = 'file'
@@ -185,15 +185,15 @@ export default function PhotosPage() {
           input.click()
         }}
       >
-        <div className="w-12 h-12 rounded-full bg-[#1E1E1C] flex items-center justify-center mx-auto mb-3">
-          <svg className="w-6 h-6 text-[rgba(242,242,242,0.3)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="w-12 h-12 rounded-full bg-[#FFFFFF] flex items-center justify-center mx-auto mb-3">
+          <svg className="w-6 h-6 text-[rgba(26,26,26,0.3)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
         </div>
-        <p className="text-sm text-[rgba(242,242,242,0.5)]">
+        <p className="text-sm text-[rgba(26,26,26,0.5)]">
           Arrastra fotos aquí o <span className="text-[#D6A700]">selecciona archivos</span>
         </p>
-        <p className="text-xs text-[rgba(242,242,242,0.2)] mt-1">
+        <p className="text-xs text-[rgba(26,26,26,0.2)] mt-1">
           JPG, PNG, WebP &middot; Máx 5MB &middot; Hasta 5 fotos por categoría
         </p>
       </div>
@@ -202,9 +202,9 @@ export default function PhotosPage() {
       {categoryUploads.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {categoryUploads.map((upload, idx) => (
-            <div key={idx} className="bg-[#141413] border border-[rgba(242,242,242,0.08)] rounded-2xl overflow-hidden">
+            <div key={idx} className="bg-[#FFFFFF] border border-[rgba(26,26,26,0.08)] rounded-2xl overflow-hidden">
               {/* Image */}
-              <div className="relative aspect-video bg-[#0A0A09]">
+              <div className="relative aspect-video bg-[#1A1A1A]">
                 <Image src={upload.preview} alt={upload.file.name} fill className="object-cover" />
 
                 {/* Remove button */}
@@ -220,13 +220,13 @@ export default function PhotosPage() {
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                     <div className="text-center">
                       <div className="w-8 h-8 border-2 border-[#D6A700] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                      <p className="text-xs text-[rgba(242,242,242,0.7)]">Analizando...</p>
+                      <p className="text-xs text-[rgba(26,26,26,0.7)]">Analizando...</p>
                     </div>
                   </div>
                 )}
 
                 {upload.status === 'uploading' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#2A2A28]">
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#E5E3DF]">
                     <div className="h-full bg-[#833B0E] rounded-full transition-all" style={{ width: `${upload.progress}%` }} />
                   </div>
                 )}
@@ -238,7 +238,7 @@ export default function PhotosPage() {
                   <div className="flex items-center justify-between">
                     {statusBadge(upload.result.overall_status)}
                     <div className="flex items-center gap-1.5">
-                      <div className="w-16 h-1.5 bg-[#2A2A28] rounded-full overflow-hidden">
+                      <div className="w-16 h-1.5 bg-[#E5E3DF] rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all duration-700"
                           style={{
@@ -247,12 +247,12 @@ export default function PhotosPage() {
                           }}
                         />
                       </div>
-                      <span className="text-xs text-[rgba(242,242,242,0.4)] tabular-nums">{upload.result.score}</span>
+                      <span className="text-xs text-[rgba(26,26,26,0.4)] tabular-nums">{upload.result.score}</span>
                     </div>
                   </div>
 
                   {upload.result.items_detected.length > 0 && (
-                    <p className="text-xs text-[rgba(242,242,242,0.5)]">
+                    <p className="text-xs text-[rgba(26,26,26,0.5)]">
                       Detectado: {upload.result.items_detected.join(', ')}
                     </p>
                   )}
@@ -260,7 +260,7 @@ export default function PhotosPage() {
                   {upload.result.issues.length > 0 && (
                     <div className="space-y-1">
                       {upload.result.issues.map((issue, j) => (
-                        <p key={j} className="text-xs text-[#F87171] flex items-start gap-1.5">
+                        <p key={j} className="text-xs text-[#F20022] flex items-start gap-1.5">
                           <span className="text-[#F20022] mt-0.5">•</span>
                           {issue}
                         </p>
@@ -278,7 +278,7 @@ export default function PhotosPage() {
 
               {upload.status === 'error' && (
                 <div className="p-4">
-                  <p className="text-xs text-[#F87171]">Error al analizar. Intenta de nuevo.</p>
+                  <p className="text-xs text-[#F20022]">Error al analizar. Intenta de nuevo.</p>
                 </div>
               )}
             </div>
@@ -290,7 +290,7 @@ export default function PhotosPage() {
       <div className="flex items-center justify-between pt-4">
         <button
           onClick={() => router.push('/apt-setup/check')}
-          className="text-sm text-[rgba(242,242,242,0.4)] hover:text-[#F2F2F2] transition-colors flex items-center gap-1"
+          className="text-sm text-[rgba(26,26,26,0.4)] hover:text-[#1A1A1A] transition-colors flex items-center gap-1"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -300,7 +300,7 @@ export default function PhotosPage() {
 
         <div className="flex items-center gap-4">
           {totalPhotos > 0 && (
-            <span className="text-xs text-[rgba(242,242,242,0.3)]">
+            <span className="text-xs text-[rgba(26,26,26,0.3)]">
               {analyzedPhotos}/{totalPhotos} analizadas
             </span>
           )}
@@ -309,7 +309,7 @@ export default function PhotosPage() {
               updateState({ photosComplete: true })
               router.push('/apt-setup/quote')
             }}
-            className="px-6 py-3 bg-[#D6A700] hover:bg-[#C49800] text-[#1D1D1B] rounded-xl text-sm font-semibold transition-colors"
+            className="px-6 py-3 bg-[#D6A700] hover:bg-[#C49800] text-[#F0EFED] rounded-xl text-sm font-semibold transition-colors"
           >
             Generar cotización
           </button>

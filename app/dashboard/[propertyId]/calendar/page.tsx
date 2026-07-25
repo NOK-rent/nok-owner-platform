@@ -48,8 +48,8 @@ export default async function CalendarPage({ params, searchParams }: Props) {
     <div className="px-8 lg:px-16 py-10 max-w-6xl">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="font-serif text-4xl font-light text-[#F2F2F2]">Calendario</h1>
-          <p className="text-sm mt-1" style={{ color: 'rgba(242,242,242,0.4)' }}>{property.name}</p>
+          <h1 className="font-serif text-4xl font-light text-[#1A1A1A]">Calendario</h1>
+          <p className="text-sm mt-1" style={{ color: 'rgba(26,26,26,0.4)' }}>{property.name}</p>
         </div>
         <SyncButton propertyId={propertyId} />
       </div>

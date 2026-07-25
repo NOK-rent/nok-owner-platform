@@ -160,10 +160,10 @@ export default function CheckPage() {
       <div className="space-y-8">
         <div className="text-center sm:text-left">
           <p className="text-[#D6A700] text-xs font-semibold tracking-[0.2em] uppercase mb-2">Resultado del check</p>
-          <h1 className="font-[family-name:var(--font-cormorant)] text-3xl sm:text-4xl font-light mb-2">
+          <h1 className="font-[family-name:var(--font-secondary)] text-3xl sm:text-4xl font-light mb-2">
             {totalPresent} de {totalStandard} ítems en estándar NOK
           </h1>
-          <p className="text-[rgba(242,242,242,0.45)]">
+          <p className="text-[rgba(26,26,26,0.45)]">
             Faltan <span className="text-[#D6A700] font-semibold">{formatPrice(totalMissingValue)}</span> en artículos
           </p>
         </div>
@@ -176,16 +176,16 @@ export default function CheckPage() {
             const isExpanded = expandedCat === cat
 
             return (
-              <div key={cat} className="bg-[#141413] border border-[rgba(242,242,242,0.08)] rounded-2xl overflow-hidden">
+              <div key={cat} className="bg-[#FFFFFF] border border-[rgba(26,26,26,0.08)] rounded-2xl overflow-hidden">
                 <button
                   onClick={() => setExpandedCat(isExpanded ? null : cat)}
-                  className="w-full p-5 flex items-center gap-4 text-left hover:bg-[#1E1E1C] transition-colors"
+                  className="w-full p-5 flex items-center gap-4 text-left hover:bg-[#FFFFFF] transition-colors"
                 >
                   <span className="text-2xl">{meta.icon}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-[#F2F2F2] text-sm">{meta.label}</p>
+                    <p className="font-medium text-[#1A1A1A] text-sm">{meta.label}</p>
                     <div className="flex items-center gap-2 mt-1.5">
-                      <div className="flex-1 h-2 bg-[#2A2A28] rounded-full overflow-hidden">
+                      <div className="flex-1 h-2 bg-[#E5E3DF] rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all duration-700 ease-out"
                           style={{
@@ -194,13 +194,13 @@ export default function CheckPage() {
                           }}
                         />
                       </div>
-                      <span className="text-xs text-[rgba(242,242,242,0.45)] tabular-nums whitespace-nowrap">
+                      <span className="text-xs text-[rgba(26,26,26,0.45)] tabular-nums whitespace-nowrap">
                         {data.present}/{data.total}
                       </span>
                     </div>
                   </div>
                   <svg
-                    className={`w-4 h-4 text-[rgba(242,242,242,0.3)] transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                    className={`w-4 h-4 text-[rgba(26,26,26,0.3)] transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
                     fill="none" stroke="currentColor" viewBox="0 0 24 24"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -208,19 +208,19 @@ export default function CheckPage() {
                 </button>
 
                 {isExpanded && (
-                  <div className="border-t border-[rgba(242,242,242,0.06)] px-5 py-3 space-y-2">
+                  <div className="border-t border-[rgba(26,26,26,0.06)] px-5 py-3 space-y-2">
                     {data.items.map((item, i) => (
                       <div
                         key={i}
-                        className={`flex items-center justify-between py-2 ${i < data.items.length - 1 ? 'border-b border-[rgba(242,242,242,0.04)]' : ''}`}
+                        className={`flex items-center justify-between py-2 ${i < data.items.length - 1 ? 'border-b border-[rgba(26,26,26,0.04)]' : ''}`}
                       >
                         <div className="flex items-center gap-2.5">
                           <span className="text-sm">
                             {item.status === 'has_it' ? '✅' : item.status === 'not_nok_standard' ? '⚠️' : '❌'}
                           </span>
-                          <span className={`text-sm ${item.status === 'has_it' ? 'text-[rgba(242,242,242,0.5)]' : 'text-[#F2F2F2]'}`}>
+                          <span className={`text-sm ${item.status === 'has_it' ? 'text-[rgba(26,26,26,0.5)]' : 'text-[#1A1A1A]'}`}>
                             {item.name}
-                            {item.quantity_needed > 1 && <span className="text-[rgba(242,242,242,0.3)]"> x{item.quantity_needed}</span>}
+                            {item.quantity_needed > 1 && <span className="text-[rgba(26,26,26,0.3)]"> x{item.quantity_needed}</span>}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -228,7 +228,7 @@ export default function CheckPage() {
                             <span className="text-xs text-[#D6A700] tabular-nums">{formatPrice(item.unit_price)}</span>
                           )}
                           {item.link && (
-                            <a href={item.link} target="_blank" rel="noopener noreferrer" className="text-xs text-[#833B0E] hover:text-[#B9B5DC]">
+                            <a href={item.link} target="_blank" rel="noopener noreferrer" className="text-xs text-[#833B0E] hover:text-[#833B0E]">
                               ver
                             </a>
                           )}
@@ -243,10 +243,10 @@ export default function CheckPage() {
         </div>
 
         {/* Summary bar */}
-        <div className="bg-[#141413] border border-[rgba(242,242,242,0.08)] rounded-2xl p-6">
+        <div className="bg-[#FFFFFF] border border-[rgba(26,26,26,0.08)] rounded-2xl p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <p className="text-sm text-[rgba(242,242,242,0.5)]">
+              <p className="text-sm text-[rgba(26,26,26,0.5)]">
                 {totalPresent} de {totalStandard} ítems en estándar NOK
               </p>
               <p className="text-xl font-semibold text-[#D6A700] tabular-nums mt-1">
@@ -256,13 +256,13 @@ export default function CheckPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => router.push('/apt-setup/photos')}
-                className="px-5 py-3 border border-[rgba(242,242,242,0.15)] rounded-xl text-sm font-medium text-[#F2F2F2] hover:bg-[#1E1E1C] transition-colors"
+                className="px-5 py-3 border border-[rgba(26,26,26,0.15)] rounded-xl text-sm font-medium text-[#1A1A1A] hover:bg-[#FFFFFF] transition-colors"
               >
                 Verificar con fotos
               </button>
               <button
                 onClick={() => router.push('/apt-setup/quote')}
-                className="px-5 py-3 bg-[#D6A700] hover:bg-[#C49800] text-[#1D1D1B] rounded-xl text-sm font-semibold transition-colors"
+                className="px-5 py-3 bg-[#D6A700] hover:bg-[#C49800] text-[#F0EFED] rounded-xl text-sm font-semibold transition-colors"
               >
                 Generar cotización
               </button>
@@ -278,7 +278,7 @@ export default function CheckPage() {
     <div className="flex flex-col" style={{ minHeight: 'calc(100vh - 200px)' }}>
       <div className="mb-6">
         <p className="text-[#D6A700] text-xs font-semibold tracking-[0.2em] uppercase mb-2">Paso 1</p>
-        <h1 className="font-[family-name:var(--font-cormorant)] text-3xl font-light">Verificación de estándares</h1>
+        <h1 className="font-[family-name:var(--font-secondary)] text-3xl font-light">Verificación de estándares</h1>
       </div>
 
       {/* Messages */}
@@ -286,15 +286,15 @@ export default function CheckPage() {
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             {msg.role === 'assistant' && (
-              <div className="w-8 h-8 rounded-full bg-[#D6A700] text-[#1D1D1B] text-xs flex items-center justify-center font-bold mr-3 flex-shrink-0 mt-1">
+              <div className="w-8 h-8 rounded-full bg-[#D6A700] text-[#F0EFED] text-xs flex items-center justify-center font-bold mr-3 flex-shrink-0 mt-1">
                 N
               </div>
             )}
             <div
               className={`max-w-md rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                 msg.role === 'user'
-                  ? 'bg-[#F2F2F2] text-[#1D1D1B] rounded-tr-sm'
-                  : 'bg-[#1E1E1C] text-[#F2F2F2] border border-[rgba(242,242,242,0.06)] rounded-tl-sm'
+                  ? 'bg-[#1A1A1A] text-[#F0EFED] rounded-tr-sm'
+                  : 'bg-[#FFFFFF] text-[#1A1A1A] border border-[rgba(26,26,26,0.06)] rounded-tl-sm'
               }`}
             >
               <span className="whitespace-pre-wrap" dangerouslySetInnerHTML={{
@@ -311,7 +311,7 @@ export default function CheckPage() {
       </div>
 
       {/* Input */}
-      <div className="sticky bottom-0 bg-[#1D1D1B] pt-4 pb-2">
+      <div className="sticky bottom-0 bg-[#F0EFED] pt-4 pb-2">
         <div className="flex items-end gap-3">
           <textarea
             value={input}
@@ -319,20 +319,20 @@ export default function CheckPage() {
             onKeyDown={handleKeyDown}
             placeholder="Describe qué tienes..."
             rows={1}
-            className="flex-1 bg-[#141413] border border-[rgba(242,242,242,0.1)] rounded-xl px-4 py-3 text-sm text-[#F2F2F2] placeholder:text-[rgba(242,242,242,0.25)] focus:outline-none focus:ring-2 focus:ring-[#D6A700]/50 focus:border-[#D6A700] resize-none transition-all"
+            className="flex-1 bg-[#FFFFFF] border border-[rgba(26,26,26,0.1)] rounded-xl px-4 py-3 text-sm text-[#1A1A1A] placeholder:text-[rgba(26,26,26,0.25)] focus:outline-none focus:ring-2 focus:ring-[#D6A700]/50 focus:border-[#D6A700] resize-none transition-all"
             style={{ maxHeight: '120px' }}
           />
           <button
             onClick={handleSend}
             disabled={isLoading || !input.trim()}
-            className="p-3 bg-[#D6A700] hover:bg-[#C49800] text-[#1D1D1B] rounded-xl transition-colors disabled:opacity-30 flex-shrink-0"
+            className="p-3 bg-[#D6A700] hover:bg-[#C49800] text-[#F0EFED] rounded-xl transition-colors disabled:opacity-30 flex-shrink-0"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
             </svg>
           </button>
         </div>
-        <p className="text-xs text-[rgba(242,242,242,0.2)] mt-2 text-center">Enter para enviar</p>
+        <p className="text-xs text-[rgba(26,26,26,0.2)] mt-2 text-center">Enter para enviar</p>
       </div>
     </div>
   )

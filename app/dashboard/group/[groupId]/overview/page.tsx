@@ -205,10 +205,10 @@ export default async function GroupOverviewPage({ params, searchParams }: Props)
     : 0
 
   return (
-    <div style={{ backgroundColor: '#1D1D1B' }} className="min-h-screen">
+    <div style={{ backgroundColor: '#F0EFED' }} className="min-h-screen">
       <section className="relative px-6 lg:px-10 py-12 max-w-6xl mx-auto">
-        <h1 className="font-serif text-4xl text-[#F2F2F2] mb-2">Grupo: {group.name}</h1>
-        <p className="text-sm text-[#F2F2F2]/50 mb-8">
+        <h1 className="font-serif text-4xl text-[#1A1A1A] mb-2">Grupo: {group.name}</h1>
+        <p className="text-sm text-[#1A1A1A]/50 mb-8">
           Vista consolidada de {props?.length ?? 0} propiedades {group.description ? `· ${group.description}` : ''}
         </p>
 
@@ -224,8 +224,8 @@ export default async function GroupOverviewPage({ params, searchParams }: Props)
         </div>
 
         {/* Financial summary */}
-        <div className="rounded-xl p-6 mb-8" style={{ backgroundColor: '#141413', border: '1px solid rgba(242,242,242,0.08)' }}>
-          <h2 className="font-serif text-2xl text-[#F2F2F2] mb-4">Resumen consolidado — {monthLabel(selectedMonthKey)}</h2>
+        <div className="rounded-xl p-6 mb-8" style={{ backgroundColor: '#FFFFFF', border: '1px solid rgba(26,26,26,0.08)' }}>
+          <h2 className="font-serif text-2xl text-[#1A1A1A] mb-4">Resumen consolidado — {monthLabel(selectedMonthKey)}</h2>
           <FinRow label="Ingresos después de comisiones de canal" value={fmt(totals.gross)} />
           <FinRow label="Comisión NOK" value={`− ${fmt(totals.commission)}`} deduct />
           {totals.cleaning > 0 && <FinRow label="Limpieza" value={`− ${fmt(totals.cleaning)}`} deduct />}
@@ -233,18 +233,18 @@ export default async function GroupOverviewPage({ params, searchParams }: Props)
           {totals.utilities > 0 && <FinRow label="Utilities (servicios)" value={`− ${fmt(totals.utilities)}`} deduct />}
           {totals.maintenance > 0 && <FinRow label="Mantenimiento" value={`− ${fmt(totals.maintenance)}`} deduct />}
           {groupMonthCost > 0 && <FinRow label="Costos del grupo" value={`− ${fmt(groupMonthCost)}`} deduct />}
-          <div className="flex items-center justify-between pt-4 mt-2 border-t border-[#F2F2F2]/10">
-            <span className="text-[#F2F2F2] font-medium">Ingreso neto propietario</span>
+          <div className="flex items-center justify-between pt-4 mt-2 border-t border-[#1A1A1A]/10">
+            <span className="text-[#1A1A1A] font-medium">Ingreso neto propietario</span>
             <span className="text-[#0E6845] text-xl font-semibold">{fmt(totals.net)}</span>
           </div>
         </div>
 
         {/* Per-property breakdown */}
-        <div className="rounded-xl p-6 mb-8" style={{ backgroundColor: '#141413', border: '1px solid rgba(242,242,242,0.08)' }}>
-          <h2 className="font-serif text-xl text-[#F2F2F2] mb-4">Desglose por propiedad</h2>
+        <div className="rounded-xl p-6 mb-8" style={{ backgroundColor: '#FFFFFF', border: '1px solid rgba(26,26,26,0.08)' }}>
+          <h2 className="font-serif text-xl text-[#1A1A1A] mb-4">Desglose por propiedad</h2>
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-[#F2F2F2]/40 text-xs uppercase tracking-wider">
+              <tr className="text-left text-[#1A1A1A]/40 text-xs uppercase tracking-wider">
                 <th className="py-2">Propiedad</th>
                 <th className="py-2 text-right">Ingresos</th>
                 <th className="py-2 text-right">Noches</th>
@@ -256,12 +256,12 @@ export default async function GroupOverviewPage({ params, searchParams }: Props)
               {Object.entries(perProp).map(([pid, a]) => {
                 const costs = a.commission + a.cleaning + a.direct + a.utilities + a.maintenance
                 return (
-                  <tr key={pid} className="border-t border-[#F2F2F2]/5">
-                    <td className="py-2 text-[#F2F2F2]">
-                      <Link href={`/dashboard/${pid}/overview`} className="hover:text-[#B9B5DC]">{a.name}</Link>
+                  <tr key={pid} className="border-t border-[#1A1A1A]/5">
+                    <td className="py-2 text-[#1A1A1A]">
+                      <Link href={`/dashboard/${pid}/overview`} className="hover:text-[#833B0E]">{a.name}</Link>
                     </td>
-                    <td className="py-2 text-right text-[#F2F2F2]/80">{fmt(a.gross)}</td>
-                    <td className="py-2 text-right text-[#F2F2F2]/60">{a.nights}</td>
+                    <td className="py-2 text-right text-[#1A1A1A]/80">{fmt(a.gross)}</td>
+                    <td className="py-2 text-right text-[#1A1A1A]/60">{a.nights}</td>
                     <td className="py-2 text-right text-[#F20022]/80">− {fmt(costs)}</td>
                     <td className="py-2 text-right text-[#0E6845]">{fmt(a.net)}</td>
                   </tr>
@@ -272,8 +272,8 @@ export default async function GroupOverviewPage({ params, searchParams }: Props)
         </div>
 
         {/* YTD */}
-        <div className="rounded-xl p-6" style={{ backgroundColor: '#141413', border: '1px solid rgba(242,242,242,0.08)' }}>
-          <h2 className="font-serif text-xl text-[#F2F2F2] mb-4">Acumulado {displayYear} (YTD)</h2>
+        <div className="rounded-xl p-6" style={{ backgroundColor: '#FFFFFF', border: '1px solid rgba(26,26,26,0.08)' }}>
+          <h2 className="font-serif text-xl text-[#1A1A1A] mb-4">Acumulado {displayYear} (YTD)</h2>
           <FinRow label="Ingresos después de comisiones de canal" value={fmt(ytdGross)} />
           <FinRow label="Comisión NOK" value={`− ${fmt(ytdComm)}`} deduct />
           {ytdCleaning > 0 && <FinRow label="Limpieza" value={`− ${fmt(ytdCleaning)}`} deduct />}
@@ -281,8 +281,8 @@ export default async function GroupOverviewPage({ params, searchParams }: Props)
           {ytdUtil > 0 && <FinRow label="Utilities" value={`− ${fmt(ytdUtil)}`} deduct />}
           {ytdMaint > 0 && <FinRow label="Mantenimiento" value={`− ${fmt(ytdMaint)}`} deduct />}
           {groupYtdCost > 0 && <FinRow label="Costos del grupo" value={`− ${fmt(groupYtdCost)}`} deduct />}
-          <div className="flex items-center justify-between pt-4 mt-2 border-t border-[#F2F2F2]/10">
-            <span className="text-[#F2F2F2] font-medium">Neto YTD</span>
+          <div className="flex items-center justify-between pt-4 mt-2 border-t border-[#1A1A1A]/10">
+            <span className="text-[#1A1A1A] font-medium">Neto YTD</span>
             <span className="text-[#0E6845] text-xl font-semibold">{fmt(ytdNet)}</span>
           </div>
         </div>
@@ -293,9 +293,9 @@ export default async function GroupOverviewPage({ params, searchParams }: Props)
 
 function Kpi({ value, label, highlight }: { value: string; label: string; highlight?: boolean }) {
   return (
-    <div className="rounded-lg px-3 py-3" style={{ backgroundColor: '#141413', border: `1px solid ${highlight ? 'rgba(14,104,69,0.4)' : 'rgba(242,242,242,0.08)'}` }}>
-      <div className={`text-xl font-semibold ${highlight ? 'text-[#0E6845]' : 'text-[#F2F2F2]'}`}>{value}</div>
-      <div className="text-[11px] text-[#F2F2F2]/40 mt-0.5">{label}</div>
+    <div className="rounded-lg px-3 py-3" style={{ backgroundColor: '#FFFFFF', border: `1px solid ${highlight ? 'rgba(14,104,69,0.4)' : 'rgba(26,26,26,0.08)'}` }}>
+      <div className={`text-xl font-semibold ${highlight ? 'text-[#0E6845]' : 'text-[#1A1A1A]'}`}>{value}</div>
+      <div className="text-[11px] text-[#1A1A1A]/40 mt-0.5">{label}</div>
     </div>
   )
 }
@@ -303,8 +303,8 @@ function Kpi({ value, label, highlight }: { value: string; label: string; highli
 function FinRow({ label, value, deduct }: { label: string; value: string; deduct?: boolean }) {
   return (
     <div className="flex items-center justify-between py-2">
-      <span className="text-sm text-[#F2F2F2]/70">{label}</span>
-      <span className={`text-sm ${deduct ? 'text-[#F20022]/80' : 'text-[#F2F2F2]'}`}>{value}</span>
+      <span className="text-sm text-[#1A1A1A]/70">{label}</span>
+      <span className={`text-sm ${deduct ? 'text-[#F20022]/80' : 'text-[#1A1A1A]'}`}>{value}</span>
     </div>
   )
 }

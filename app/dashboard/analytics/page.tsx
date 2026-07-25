@@ -14,7 +14,7 @@ interface MonthRow {
 }
 interface PropertySeries { id: string; name: string; months: MonthRow[] }
 
-const COLORS = ['#B9B5DC', '#D6A700', '#0E6845', '#F20022', '#4D9DE0', '#E07A5F', '#8E44AD', '#16A085']
+const COLORS = ['#833B0E', '#0E6845', '#0080C6', '#D6A700', '#4D439E', '#E07A5F', '#8E44AD', '#16A085']
 
 function fmtUSD(v: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v)
@@ -172,9 +172,9 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="min-h-screen px-6 lg:px-10 py-10 max-w-7xl mx-auto" style={{ backgroundColor: '#1D1D1B' }}>
-      <h1 className="font-serif text-4xl text-[#F2F2F2] mb-2">Analíticas</h1>
-      <p className="text-sm text-[#F2F2F2]/50 mb-8">Últimos 12 meses · ingresos, ocupación, ADR y desglose de costos.</p>
+    <div className="min-h-screen px-6 lg:px-10 py-10 max-w-7xl mx-auto" style={{ backgroundColor: '#F0EFED' }}>
+      <h1 className="font-serif text-4xl text-[#1A1A1A] mb-2">Analíticas</h1>
+      <p className="text-sm text-[#1A1A1A]/50 mb-8">Últimos 12 meses · ingresos, ocupación, ADR y desglose de costos.</p>
 
       {/* Mode toggle */}
       <div className="mb-4 flex gap-2">
@@ -182,9 +182,9 @@ export default function AnalyticsPage() {
           onClick={() => setMode('compare')}
           className="px-4 py-1.5 rounded-lg text-xs font-medium transition-all"
           style={{
-            backgroundColor: mode === 'compare' ? 'rgba(131, 59, 14,0.25)' : 'rgba(242,242,242,0.04)',
-            border: `1px solid ${mode === 'compare' ? '#833B0E' : 'rgba(242,242,242,0.08)'}`,
-            color: mode === 'compare' ? '#F2F2F2' : 'rgba(242,242,242,0.55)',
+            backgroundColor: mode === 'compare' ? 'rgba(131, 59, 14,0.25)' : 'rgba(26,26,26,0.04)',
+            border: `1px solid ${mode === 'compare' ? '#833B0E' : 'rgba(26,26,26,0.08)'}`,
+            color: mode === 'compare' ? '#1A1A1A' : 'rgba(26,26,26,0.55)',
           }}
         >
           Comparar
@@ -193,9 +193,9 @@ export default function AnalyticsPage() {
           onClick={() => setMode('consolidated')}
           className="px-4 py-1.5 rounded-lg text-xs font-medium transition-all"
           style={{
-            backgroundColor: mode === 'consolidated' ? 'rgba(131, 59, 14,0.25)' : 'rgba(242,242,242,0.04)',
-            border: `1px solid ${mode === 'consolidated' ? '#833B0E' : 'rgba(242,242,242,0.08)'}`,
-            color: mode === 'consolidated' ? '#F2F2F2' : 'rgba(242,242,242,0.55)',
+            backgroundColor: mode === 'consolidated' ? 'rgba(131, 59, 14,0.25)' : 'rgba(26,26,26,0.04)',
+            border: `1px solid ${mode === 'consolidated' ? '#833B0E' : 'rgba(26,26,26,0.08)'}`,
+            color: mode === 'consolidated' ? '#1A1A1A' : 'rgba(26,26,26,0.55)',
           }}
         >
           Consolidado
@@ -204,8 +204,8 @@ export default function AnalyticsPage() {
 
       {/* Saved groups quick-load */}
       {groups.length > 0 && (
-        <div className="mb-4 p-4 rounded-xl" style={{ backgroundColor: '#141413', border: '1px solid rgba(242,242,242,0.08)' }}>
-          <p className="text-xs text-[#F2F2F2]/50 uppercase tracking-wider mb-2">Mis grupos guardados</p>
+        <div className="mb-4 p-4 rounded-xl" style={{ backgroundColor: '#FFFFFF', border: '1px solid rgba(26,26,26,0.08)' }}>
+          <p className="text-xs text-[#1A1A1A]/50 uppercase tracking-wider mb-2">Mis grupos guardados</p>
           <div className="flex flex-wrap gap-2">
             {groups.map((g) => (
               <div key={g.id} className="flex items-center gap-1">
@@ -234,9 +234,9 @@ export default function AnalyticsPage() {
       )}
 
       {/* Property multi-select */}
-      <div className="mb-6 p-4 rounded-xl" style={{ backgroundColor: '#141413', border: '1px solid rgba(242,242,242,0.08)' }}>
+      <div className="mb-6 p-4 rounded-xl" style={{ backgroundColor: '#FFFFFF', border: '1px solid rgba(26,26,26,0.08)' }}>
         <div className="flex items-center justify-between mb-2">
-          <p className="text-xs text-[#F2F2F2]/50 uppercase tracking-wider">Propiedades seleccionadas ({selected.length})</p>
+          <p className="text-xs text-[#1A1A1A]/50 uppercase tracking-wider">Propiedades seleccionadas ({selected.length})</p>
           {selected.length > 1 && (
             <button
               onClick={saveAsGroup}
@@ -260,9 +260,9 @@ export default function AnalyticsPage() {
                 onClick={() => toggleProp(p.id)}
                 className="px-3 py-1.5 rounded-lg text-xs transition-all"
                 style={{
-                  backgroundColor: active ? 'rgba(131, 59, 14,0.25)' : 'rgba(242,242,242,0.04)',
-                  border: `1px solid ${active ? '#833B0E' : 'rgba(242,242,242,0.08)'}`,
-                  color: active ? '#F2F2F2' : 'rgba(242,242,242,0.55)',
+                  backgroundColor: active ? 'rgba(131, 59, 14,0.25)' : 'rgba(26,26,26,0.04)',
+                  border: `1px solid ${active ? '#833B0E' : 'rgba(26,26,26,0.08)'}`,
+                  color: active ? '#1A1A1A' : 'rgba(26,26,26,0.55)',
                 }}
               >
                 {p.name}
@@ -272,7 +272,7 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {loading && <p className="text-[#F2F2F2]/50 text-sm">Cargando…</p>}
+      {loading && <p className="text-[#1A1A1A]/50 text-sm">Cargando…</p>}
 
       {series.length > 0 && (
         <>
@@ -280,13 +280,13 @@ export default function AnalyticsPage() {
           <ChartCard title="Ingresos por mes (USD)">
             <ResponsiveContainer width="100%" height={260}>
               <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(242,242,242,0.06)" />
-                <XAxis dataKey="month" stroke="rgba(242,242,242,0.4)" fontSize={11} />
-                <YAxis stroke="rgba(242,242,242,0.4)" fontSize={11} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
-                <Tooltip contentStyle={{ backgroundColor: '#1E1E1C', border: '1px solid rgba(242,242,242,0.1)' }} formatter={(v: any) => fmtUSD(Number(v))} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(26,26,26,0.06)" />
+                <XAxis dataKey="month" stroke="rgba(26,26,26,0.4)" fontSize={11} />
+                <YAxis stroke="rgba(26,26,26,0.4)" fontSize={11} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
+                <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid rgba(26,26,26,0.1)' }} formatter={(v: any) => fmtUSD(Number(v))} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 {mode === 'consolidated'
-                  ? <Line type="monotone" dataKey="Consolidado_revenue" name="Consolidado" stroke="#B9B5DC" strokeWidth={2.5} dot={false} />
+                  ? <Line type="monotone" dataKey="Consolidado_revenue" name="Consolidado" stroke="#833B0E" strokeWidth={2.5} dot={false} />
                   : series.map((p, i) => (
                     <Line key={p.id} type="monotone" dataKey={`${p.name}_revenue`} name={p.name} stroke={COLORS[i % COLORS.length]} strokeWidth={2} dot={false} />
                   ))}
@@ -298,10 +298,10 @@ export default function AnalyticsPage() {
           <ChartCard title="Ingreso neto propietario (USD)">
             <ResponsiveContainer width="100%" height={260}>
               <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(242,242,242,0.06)" />
-                <XAxis dataKey="month" stroke="rgba(242,242,242,0.4)" fontSize={11} />
-                <YAxis stroke="rgba(242,242,242,0.4)" fontSize={11} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
-                <Tooltip contentStyle={{ backgroundColor: '#1E1E1C', border: '1px solid rgba(242,242,242,0.1)' }} formatter={(v: any) => fmtUSD(Number(v))} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(26,26,26,0.06)" />
+                <XAxis dataKey="month" stroke="rgba(26,26,26,0.4)" fontSize={11} />
+                <YAxis stroke="rgba(26,26,26,0.4)" fontSize={11} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
+                <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid rgba(26,26,26,0.1)' }} formatter={(v: any) => fmtUSD(Number(v))} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 {mode === 'consolidated'
                   ? <Line type="monotone" dataKey="Consolidado_net" name="Consolidado" stroke="#0E6845" strokeWidth={2.5} dot={false} />
@@ -316,10 +316,10 @@ export default function AnalyticsPage() {
           <ChartCard title="Ocupación (%)">
             <ResponsiveContainer width="100%" height={260}>
               <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(242,242,242,0.06)" />
-                <XAxis dataKey="month" stroke="rgba(242,242,242,0.4)" fontSize={11} />
-                <YAxis stroke="rgba(242,242,242,0.4)" fontSize={11} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
-                <Tooltip contentStyle={{ backgroundColor: '#1E1E1C', border: '1px solid rgba(242,242,242,0.1)' }} formatter={(v: any) => `${v}%`} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(26,26,26,0.06)" />
+                <XAxis dataKey="month" stroke="rgba(26,26,26,0.4)" fontSize={11} />
+                <YAxis stroke="rgba(26,26,26,0.4)" fontSize={11} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+                <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid rgba(26,26,26,0.1)' }} formatter={(v: any) => `${v}%`} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 {mode === 'consolidated'
                   ? <Line type="monotone" dataKey="Consolidado_occupancy" name="Consolidado" stroke="#D6A700" strokeWidth={2.5} dot={false} />
@@ -334,13 +334,13 @@ export default function AnalyticsPage() {
           <ChartCard title="ADR (Tarifa promedio diaria, USD)">
             <ResponsiveContainer width="100%" height={260}>
               <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(242,242,242,0.06)" />
-                <XAxis dataKey="month" stroke="rgba(242,242,242,0.4)" fontSize={11} />
-                <YAxis stroke="rgba(242,242,242,0.4)" fontSize={11} tickFormatter={(v) => `$${v}`} />
-                <Tooltip contentStyle={{ backgroundColor: '#1E1E1C', border: '1px solid rgba(242,242,242,0.1)' }} formatter={(v: any) => fmtUSD(Number(v))} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(26,26,26,0.06)" />
+                <XAxis dataKey="month" stroke="rgba(26,26,26,0.4)" fontSize={11} />
+                <YAxis stroke="rgba(26,26,26,0.4)" fontSize={11} tickFormatter={(v) => `$${v}`} />
+                <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid rgba(26,26,26,0.1)' }} formatter={(v: any) => fmtUSD(Number(v))} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 {mode === 'consolidated'
-                  ? <Line type="monotone" dataKey="Consolidado_adr" name="Consolidado" stroke="#4D9DE0" strokeWidth={2.5} dot={false} />
+                  ? <Line type="monotone" dataKey="Consolidado_adr" name="Consolidado" stroke="#0080C6" strokeWidth={2.5} dot={false} />
                   : series.map((p, i) => (
                     <Line key={p.id} type="monotone" dataKey={`${p.name}_adr`} name={p.name} stroke={COLORS[i % COLORS.length]} strokeWidth={2} dot={false} />
                   ))}
@@ -352,15 +352,15 @@ export default function AnalyticsPage() {
           <ChartCard title="Costos por mes (desglose)">
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={costBreakdown}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(242,242,242,0.06)" />
-                <XAxis dataKey="month" stroke="rgba(242,242,242,0.4)" fontSize={11} />
-                <YAxis stroke="rgba(242,242,242,0.4)" fontSize={11} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
-                <Tooltip contentStyle={{ backgroundColor: '#1E1E1C', border: '1px solid rgba(242,242,242,0.1)' }} formatter={(v: any) => fmtUSD(Number(v))} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(26,26,26,0.06)" />
+                <XAxis dataKey="month" stroke="rgba(26,26,26,0.4)" fontSize={11} />
+                <YAxis stroke="rgba(26,26,26,0.4)" fontSize={11} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
+                <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid rgba(26,26,26,0.1)' }} formatter={(v: any) => fmtUSD(Number(v))} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Bar dataKey="commission" stackId="a" name="Comisión NOK" fill="#B9B5DC" />
                 <Bar dataKey="cleaning" stackId="a" name="Limpieza" fill="#D6A700" />
                 <Bar dataKey="direct" stackId="a" name="Reserva Directa" fill="#0E6845" />
-                <Bar dataKey="utilities" stackId="a" name="Utilities" fill="#4D9DE0" />
+                <Bar dataKey="utilities" stackId="a" name="Utilities" fill="#0080C6" />
                 <Bar dataKey="maintenance" stackId="a" name="Mantenimiento" fill="#F20022" />
               </BarChart>
             </ResponsiveContainer>
@@ -372,7 +372,7 @@ export default function AnalyticsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="text-left text-[#F2F2F2]/40 uppercase tracking-wider">
+                    <tr className="text-left text-[#1A1A1A]/40 uppercase tracking-wider">
                       <th className="py-2 pr-3">Mes</th>
                       <th className="py-2 px-2 text-right">Ingresos</th>
                       <th className="py-2 px-2 text-right">Noches</th>
@@ -388,8 +388,8 @@ export default function AnalyticsPage() {
                   </thead>
                   <tbody>
                     {consolidatedRows.map((r) => (
-                      <tr key={r.month} className="border-t border-[#F2F2F2]/5 text-[#F2F2F2]/80">
-                        <td className="py-2 pr-3 text-[#F2F2F2]">{r.label}</td>
+                      <tr key={r.month} className="border-t border-[#1A1A1A]/5 text-[#1A1A1A]/80">
+                        <td className="py-2 pr-3 text-[#1A1A1A]">{r.label}</td>
                         <td className="py-2 px-2 text-right">{fmtUSD(r.revenue)}</td>
                         <td className="py-2 px-2 text-right">{r.nights}</td>
                         <td className="py-2 px-2 text-right">{fmtUSD(r.adr)}</td>
@@ -412,7 +412,7 @@ export default function AnalyticsPage() {
                       }), { revenue:0,nights:0,commission:0,cleaning:0,direct:0,utilities:0,maintenance:0,net:0 })
                       const adr = t.nights > 0 ? t.revenue / t.nights : 0
                       return (
-                        <tr className="border-t-2 border-[#F2F2F2]/20 text-[#F2F2F2] font-medium">
+                        <tr className="border-t-2 border-[#1A1A1A]/20 text-[#1A1A1A] font-medium">
                           <td className="py-2 pr-3">Total 12m</td>
                           <td className="py-2 px-2 text-right">{fmtUSD(t.revenue)}</td>
                           <td className="py-2 px-2 text-right">{t.nights}</td>
@@ -440,7 +440,7 @@ export default function AnalyticsPage() {
                 <Pie data={costTotals} dataKey="value" nameKey="name" innerRadius={60} outerRadius={100} paddingAngle={2}>
                   {costTotals.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
-                <Tooltip contentStyle={{ backgroundColor: '#1E1E1C', border: '1px solid rgba(242,242,242,0.1)' }} formatter={(v: any) => fmtUSD(Number(v))} />
+                <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid rgba(26,26,26,0.1)' }} formatter={(v: any) => fmtUSD(Number(v))} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
               </PieChart>
             </ResponsiveContainer>
@@ -453,8 +453,8 @@ export default function AnalyticsPage() {
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="mb-6 p-5 rounded-xl" style={{ backgroundColor: '#141413', border: '1px solid rgba(242,242,242,0.08)' }}>
-      <h3 className="text-sm text-[#F2F2F2]/80 mb-3 font-medium">{title}</h3>
+    <div className="mb-6 p-5 rounded-xl" style={{ backgroundColor: '#FFFFFF', border: '1px solid rgba(26,26,26,0.08)' }}>
+      <h3 className="text-sm text-[#1A1A1A]/80 mb-3 font-medium">{title}</h3>
       {children}
     </div>
   )

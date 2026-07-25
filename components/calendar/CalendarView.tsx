@@ -41,13 +41,13 @@ const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Ago
 const DAYS_ES   = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
 
 const CHANNEL_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  airbnb:        { bg: 'rgba(239,68,68,0.15)',   border: '#ef4444', text: '#fca5a5' },
-  'booking.com': { bg: 'rgba(59,130,246,0.15)',  border: '#3b82f6', text: '#93c5fd' },
-  direct:        { bg: 'rgba(14,104,69,0.2)',    border: '#22c55e', text: '#86efac' },
-  vrbo:          { bg: 'rgba(139,92,246,0.15)',  border: '#8b5cf6', text: '#c4b5fd' },
+  airbnb:        { bg: 'rgba(239,68,68,0.15)',   border: '#ef4444', text: '#F20022' },
+  'booking.com': { bg: 'rgba(59,130,246,0.15)',  border: '#0080C6', text: '#0080C6' },
+  direct:        { bg: 'rgba(14,104,69,0.2)',    border: '#0E6845', text: '#0E6845' },
+  vrbo:          { bg: 'rgba(139,92,246,0.15)',  border: '#4D439E', text: '#4D439E' },
 }
 
-const DEFAULT_CHANNEL = { bg: 'rgba(131, 59, 14,0.15)', border: '#833B0E', text: '#B9B5DC' }
+const DEFAULT_CHANNEL = { bg: 'rgba(131, 59, 14,0.15)', border: '#833B0E', text: '#833B0E' }
 
 function getChannelStyle(channel: string | null) {
   if (!channel) return DEFAULT_CHANNEL
@@ -117,9 +117,9 @@ export default function CalendarView({ propertyId, year, month, reservations, pr
           { label: 'Ingresos netos', value: fmt(monthRevenue) ?? '—', sub: 'propietario' },
         ].map(s => (
           <div key={s.label} className="rounded-2xl p-5 nok-card">
-            <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'rgba(242,242,242,0.35)' }}>{s.label}</p>
-            <p className="font-serif text-3xl font-light text-[#F2F2F2]">{s.value}</p>
-            <p className="text-xs mt-1" style={{ color: 'rgba(242,242,242,0.3)' }}>{s.sub}</p>
+            <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'rgba(26,26,26,0.35)' }}>{s.label}</p>
+            <p className="font-serif text-3xl font-light text-[#1A1A1A]">{s.value}</p>
+            <p className="text-xs mt-1" style={{ color: 'rgba(26,26,26,0.3)' }}>{s.sub}</p>
           </div>
         ))}
       </div>
@@ -127,31 +127,31 @@ export default function CalendarView({ propertyId, year, month, reservations, pr
       {/* Calendar card */}
       <div
         className="rounded-2xl overflow-hidden"
-        style={{ backgroundColor: '#141413', border: '1px solid rgba(242,242,242,0.07)' }}
+        style={{ backgroundColor: '#FFFFFF', border: '1px solid rgba(26,26,26,0.07)' }}
       >
         {/* Month navigation */}
         <div
           className="flex items-center justify-between px-6 py-4"
-          style={{ borderBottom: '1px solid rgba(242,242,242,0.06)' }}
+          style={{ borderBottom: '1px solid rgba(26,26,26,0.06)' }}
         >
           <button
             onClick={() => navigate(-1)}
             className="w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200 cursor-pointer"
-            style={{ color: 'rgba(242,242,242,0.45)', border: '1px solid rgba(242,242,242,0.07)' }}
+            style={{ color: 'rgba(26,26,26,0.45)', border: '1px solid rgba(26,26,26,0.07)' }}
             onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(131, 59, 14,0.5)'}
-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(242,242,242,0.07)'}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(26,26,26,0.07)'}
           >
             ‹
           </button>
-          <h2 className="font-serif text-xl font-light text-[#F2F2F2]">
+          <h2 className="font-serif text-xl font-light text-[#1A1A1A]">
             {MONTHS_ES[month - 1]} {year}
           </h2>
           <button
             onClick={() => navigate(1)}
             className="w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200 cursor-pointer"
-            style={{ color: 'rgba(242,242,242,0.45)', border: '1px solid rgba(242,242,242,0.07)' }}
+            style={{ color: 'rgba(26,26,26,0.45)', border: '1px solid rgba(26,26,26,0.07)' }}
             onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(131, 59, 14,0.5)'}
-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(242,242,242,0.07)'}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(26,26,26,0.07)'}
           >
             ›
           </button>
@@ -160,11 +160,11 @@ export default function CalendarView({ propertyId, year, month, reservations, pr
         {/* Day headers */}
         <div
           className="grid grid-cols-7"
-          style={{ borderBottom: '1px solid rgba(242,242,242,0.05)' }}
+          style={{ borderBottom: '1px solid rgba(26,26,26,0.05)' }}
         >
           {DAYS_ES.map(d => (
             <div key={d} className="py-3 text-center text-xs font-medium tracking-widest uppercase"
-              style={{ color: 'rgba(242,242,242,0.25)' }}>
+              style={{ color: 'rgba(26,26,26,0.25)' }}>
               {d}
             </div>
           ))}
@@ -177,7 +177,7 @@ export default function CalendarView({ propertyId, year, month, reservations, pr
               <div
                 key={i}
                 className="min-h-[88px]"
-                style={{ borderRight: '1px solid rgba(242,242,242,0.04)', borderBottom: '1px solid rgba(242,242,242,0.04)', backgroundColor: '#111110' }}
+                style={{ borderRight: '1px solid rgba(26,26,26,0.04)', borderBottom: '1px solid rgba(26,26,26,0.04)', backgroundColor: '#E9E7E2' }}
               />
             )
 
@@ -195,11 +195,11 @@ export default function CalendarView({ propertyId, year, month, reservations, pr
                 onClick={() => reservation && setSelectedReservation(reservation)}
                 className="min-h-[88px] p-1.5 flex flex-col transition-colors duration-150"
                 style={{
-                  borderRight: '1px solid rgba(242,242,242,0.04)',
-                  borderBottom: '1px solid rgba(242,242,242,0.04)',
+                  borderRight: '1px solid rgba(26,26,26,0.04)',
+                  borderBottom: '1px solid rgba(26,26,26,0.04)',
                   backgroundColor: reservation
                     ? `${channelStyle.bg}`
-                    : isPast ? '#111110' : '#141413',
+                    : isPast ? '#E9E7E2' : '#FFFFFF',
                   cursor: reservation ? 'pointer' : 'default',
                 }}
                 onMouseEnter={e => {
@@ -216,16 +216,16 @@ export default function CalendarView({ propertyId, year, month, reservations, pr
                     className="w-6 h-6 flex items-center justify-center rounded-full text-xs font-medium"
                     style={{
                       backgroundColor: isToday ? '#833B0E' : 'transparent',
-                      color: isToday ? '#F2F2F2' : isPast ? 'rgba(242,242,242,0.2)' : 'rgba(242,242,242,0.6)',
+                      color: isToday ? '#FFFFFF' : isPast ? 'rgba(26,26,26,0.2)' : 'rgba(26,26,26,0.6)',
                     }}
                   >
                     {day}
                   </span>
                   {isCheckIn && (
-                    <span className="text-[9px] font-semibold px-1 py-0.5 rounded" style={{ color: '#4ade80', backgroundColor: 'rgba(74,222,128,0.1)' }}>IN</span>
+                    <span className="text-[9px] font-semibold px-1 py-0.5 rounded" style={{ color: '#0E6845', backgroundColor: 'rgba(74,222,128,0.1)' }}>IN</span>
                   )}
                   {reservation?.check_out === date && !isCheckIn && (
-                    <span className="text-[9px] font-semibold px-1 py-0.5 rounded" style={{ color: '#fca5a5', backgroundColor: 'rgba(252,165,165,0.1)' }}>OUT</span>
+                    <span className="text-[9px] font-semibold px-1 py-0.5 rounded" style={{ color: '#F20022', backgroundColor: 'rgba(252,165,165,0.1)' }}>OUT</span>
                   )}
                 </div>
 
@@ -243,11 +243,11 @@ export default function CalendarView({ propertyId, year, month, reservations, pr
                     </p>
                     {isCheckIn && (
                       <>
-                        <p className="text-[9px] leading-tight mt-0.5" style={{ color: 'rgba(242,242,242,0.4)' }}>
+                        <p className="text-[9px] leading-tight mt-0.5" style={{ color: 'rgba(26,26,26,0.4)' }}>
                           {reservation.nights}n · {reservation.channel ? reservation.channel.charAt(0).toUpperCase() + reservation.channel.slice(1) : ''}
                         </p>
                         {reservation.owner_revenue ? (
-                          <p className="text-[9px] font-semibold leading-tight mt-0.5" style={{ color: 'rgba(74,222,128,0.8)' }}>
+                          <p className="text-[9px] font-semibold leading-tight mt-0.5" style={{ color: '#0E6845' }}>
                             {fmt(reservation.owner_revenue, reservation.currency ?? 'USD')}
                           </p>
                         ) : null}
@@ -264,26 +264,26 @@ export default function CalendarView({ propertyId, year, month, reservations, pr
                         {fmt(price.base_rate, price.currency ?? 'USD')}
                       </p>
                     ) : (
-                      <p className="text-[9px]" style={{ color: 'rgba(242,242,242,0.2)' }}>
+                      <p className="text-[9px]" style={{ color: 'rgba(26,26,26,0.2)' }}>
                         Disponible
                       </p>
                     )}
                     {price.min_stay_nights && price.min_stay_nights > 1 && (
-                      <p className="text-[9px]" style={{ color: 'rgba(242,242,242,0.25)' }}>{price.min_stay_nights}n mín</p>
+                      <p className="text-[9px]" style={{ color: 'rgba(26,26,26,0.25)' }}>{price.min_stay_nights}n mín</p>
                     )}
                   </div>
                 )}
                 {/* No pricing data, no reservation — show available */}
                 {!reservation && !price && !isPast && (
                   <div className="mt-auto">
-                    <p className="text-[9px]" style={{ color: 'rgba(242,242,242,0.15)' }}>Disponible</p>
+                    <p className="text-[9px]" style={{ color: 'rgba(26,26,26,0.15)' }}>Disponible</p>
                   </div>
                 )}
 
                 {/* Blocked */}
                 {!reservation && price?.is_blocked && (
-                  <div className="rounded px-1 py-0.5 mt-auto" style={{ backgroundColor: 'rgba(242,242,242,0.05)' }}>
-                    <p className="text-[9px]" style={{ color: 'rgba(242,242,242,0.25)' }}>Bloqueado</p>
+                  <div className="rounded px-1 py-0.5 mt-auto" style={{ backgroundColor: 'rgba(26,26,26,0.05)' }}>
+                    <p className="text-[9px]" style={{ color: 'rgba(26,26,26,0.25)' }}>Bloqueado</p>
                   </div>
                 )}
               </div>
@@ -294,23 +294,23 @@ export default function CalendarView({ propertyId, year, month, reservations, pr
 
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-4 mt-4 px-1">
-        <p className="text-xs uppercase tracking-widest" style={{ color: 'rgba(242,242,242,0.25)' }}>Canales:</p>
+        <p className="text-xs uppercase tracking-widest" style={{ color: 'rgba(26,26,26,0.25)' }}>Canales:</p>
         {Object.entries(CHANNEL_COLORS).map(([channel, style]) => (
           <div key={channel} className="flex items-center gap-1.5">
             <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: style.border }} />
-            <span className="text-xs capitalize" style={{ color: 'rgba(242,242,242,0.4)' }}>{channel}</span>
+            <span className="text-xs capitalize" style={{ color: 'rgba(26,26,26,0.4)' }}>{channel}</span>
           </div>
         ))}
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: '#833B0E' }} />
-          <span className="text-xs" style={{ color: 'rgba(242,242,242,0.4)' }}>Otro</span>
+          <span className="text-xs" style={{ color: 'rgba(26,26,26,0.4)' }}>Otro</span>
         </div>
       </div>
 
       {/* Reservation list for the month */}
       {reservations.length > 0 && (
         <div className="mt-8">
-          <h3 className="font-serif text-lg font-light text-[#F2F2F2] mb-4">
+          <h3 className="font-serif text-lg font-light text-[#1A1A1A] mb-4">
             Reservas del mes ({reservations.length})
           </h3>
           <div className="space-y-2">
@@ -327,14 +327,14 @@ export default function CalendarView({ propertyId, year, month, reservations, pr
                     onClick={() => setSelectedReservation(r)}
                     className="rounded-xl p-4 flex items-center gap-4 cursor-pointer transition-all duration-150 hover:scale-[1.01]"
                     style={{
-                      backgroundColor: '#141413',
-                      border: '1px solid rgba(242,242,242,0.07)',
+                      backgroundColor: '#FFFFFF',
+                      border: '1px solid rgba(26,26,26,0.07)',
                       borderLeft: `3px solid ${ch.border}`,
                     }}
                   >
                     {/* Guest + Channel */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-[#F2F2F2] truncate">
+                      <p className="text-sm font-medium text-[#1A1A1A] truncate">
                         {r.guest_name || 'Huésped'}
                       </p>
                       <p className="text-xs mt-0.5 capitalize" style={{ color: ch.text }}>
@@ -343,25 +343,25 @@ export default function CalendarView({ propertyId, year, month, reservations, pr
                     </div>
                     {/* Dates */}
                     <div className="text-right shrink-0">
-                      <p className="text-xs text-[#F2F2F2]/60">
+                      <p className="text-xs text-[#1A1A1A]/60">
                         {fmtDate(checkInDate)} → {fmtDate(checkOutDate)}
                       </p>
-                      <p className="text-[10px] mt-0.5" style={{ color: 'rgba(242,242,242,0.3)' }}>
+                      <p className="text-[10px] mt-0.5" style={{ color: 'rgba(26,26,26,0.3)' }}>
                         {r.nights ?? '—'} noches · {r.num_guests ?? '—'} huéspedes
                       </p>
                     </div>
                     {/* Revenue */}
                     <div className="text-right shrink-0 ml-2">
                       {r.owner_revenue ? (
-                        <p className="text-sm font-semibold" style={{ color: '#4ade80' }}>
+                        <p className="text-sm font-semibold" style={{ color: '#0E6845' }}>
                           {fmt(r.owner_revenue, r.currency ?? 'USD')}
                         </p>
                       ) : r.total_price ? (
-                        <p className="text-sm font-medium text-[#F2F2F2]/60">
+                        <p className="text-sm font-medium text-[#1A1A1A]/60">
                           {fmt(r.total_price, r.currency ?? 'USD')}
                         </p>
                       ) : (
-                        <p className="text-sm text-[#F2F2F2]/30">—</p>
+                        <p className="text-sm text-[#1A1A1A]/30">—</p>
                       )}
                     </div>
                   </div>
@@ -375,21 +375,21 @@ export default function CalendarView({ propertyId, year, month, reservations, pr
       {selectedReservation && (
         <div
           className="fixed inset-0 flex items-end sm:items-center justify-center z-50 p-4"
-          style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+          style={{ backgroundColor: 'rgba(0,0,0,0.12)', backdropFilter: 'blur(4px)' }}
           onClick={() => setSelectedReservation(null)}
         >
           <div
             className="w-full max-w-sm rounded-2xl p-6"
             style={{
-              backgroundColor: '#1E1E1C',
+              backgroundColor: '#FFFFFF',
               border: '1px solid rgba(131, 59, 14,0.3)',
-              boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.12)',
             }}
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-start justify-between mb-5">
               <div>
-                <p className="font-serif text-2xl font-light text-[#F2F2F2]">
+                <p className="font-serif text-2xl font-light text-[#1A1A1A]">
                   {selectedReservation.guest_name ?? 'Huésped'}
                 </p>
                 <div className="flex items-center gap-2 mt-1">
@@ -397,7 +397,7 @@ export default function CalendarView({ propertyId, year, month, reservations, pr
                     className="w-2 h-2 rounded-full"
                     style={{ backgroundColor: getChannelStyle(selectedReservation.channel).border }}
                   />
-                  <p className="text-xs capitalize" style={{ color: 'rgba(242,242,242,0.4)' }}>
+                  <p className="text-xs capitalize" style={{ color: 'rgba(26,26,26,0.4)' }}>
                     {selectedReservation.channel ?? 'Canal desconocido'}
                   </p>
                 </div>
@@ -405,9 +405,9 @@ export default function CalendarView({ propertyId, year, month, reservations, pr
               <button
                 onClick={() => setSelectedReservation(null)}
                 className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors cursor-pointer"
-                style={{ color: 'rgba(242,242,242,0.4)', border: '1px solid rgba(242,242,242,0.08)' }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#F2F2F2'}
-                onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'rgba(242,242,242,0.4)'}
+                style={{ color: 'rgba(26,26,26,0.4)', border: '1px solid rgba(26,26,26,0.08)' }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#1A1A1A'}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'rgba(26,26,26,0.4)'}
               >
                 ×
               </button>
@@ -424,10 +424,10 @@ export default function CalendarView({ propertyId, year, month, reservations, pr
               {selectedReservation.owner_revenue && (
                 <div
                   className="flex items-center justify-between pt-3 mt-1"
-                  style={{ borderTop: '1px solid rgba(242,242,242,0.07)' }}
+                  style={{ borderTop: '1px solid rgba(26,26,26,0.07)' }}
                 >
-                  <span className="text-sm font-medium text-[#F2F2F2]">Ingreso neto</span>
-                  <span className="text-base font-semibold" style={{ color: '#4ade80' }}>
+                  <span className="text-sm font-medium text-[#1A1A1A]">Ingreso neto</span>
+                  <span className="text-base font-semibold" style={{ color: '#0E6845' }}>
                     {fmt(selectedReservation.owner_revenue, selectedReservation.currency ?? 'USD')}
                   </span>
                 </div>
@@ -439,7 +439,7 @@ export default function CalendarView({ propertyId, year, month, reservations, pr
                 href={`/dashboard/${propertyId}/reservations`}
                 className="block text-center text-sm py-2.5 rounded-xl transition-all duration-200"
                 style={{
-                  color: '#B9B5DC',
+                  color: '#833B0E',
                   border: '1px solid rgba(131, 59, 14,0.3)',
                   backgroundColor: 'rgba(131, 59, 14,0.08)',
                 }}
@@ -458,8 +458,8 @@ export default function CalendarView({ propertyId, year, month, reservations, pr
 function ModalRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between items-start gap-4">
-      <span className="text-sm shrink-0" style={{ color: 'rgba(242,242,242,0.4)' }}>{label}</span>
-      <span className="text-sm font-medium text-[#F2F2F2] text-right">{value}</span>
+      <span className="text-sm shrink-0" style={{ color: 'rgba(26,26,26,0.4)' }}>{label}</span>
+      <span className="text-sm font-medium text-[#1A1A1A] text-right">{value}</span>
     </div>
   )
 }

@@ -26,29 +26,29 @@ export default async function ChatPage({ params }: Props) {
   }))
 
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col" style={{ backgroundColor: '#1D1D1B' }}>
+    <div className="h-[calc(100vh-64px)] flex flex-col" style={{ backgroundColor: '#F0EFED' }}>
       {/* Header */}
       <div
         className="px-8 py-4 shrink-0 flex items-center gap-3"
-        style={{ borderBottom: '1px solid rgba(242,242,242,0.06)' }}
+        style={{ borderBottom: '1px solid rgba(26,26,26,0.06)' }}
       >
         <div
           className="w-9 h-9 rounded-xl flex items-center justify-center"
           style={{ backgroundColor: 'rgba(131, 59, 14,0.2)', border: '1px solid rgba(131, 59, 14,0.4)' }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#B9B5DC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#833B0E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
           </svg>
         </div>
         <div>
-          <h1 className="font-semibold text-[#F2F2F2] text-sm">Asistente NOK AI</h1>
-          <p className="text-xs" style={{ color: 'rgba(242,242,242,0.35)' }}>{property.name}</p>
+          <h1 className="font-semibold text-[#1A1A1A] text-sm">Asistente NOK AI</h1>
+          <p className="text-xs" style={{ color: 'rgba(26,26,26,0.35)' }}>{property.name}</p>
         </div>
         <span
           className="ml-auto flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full"
-          style={{ backgroundColor: 'rgba(14,104,69,0.15)', color: '#4ade80', border: '1px solid rgba(14,104,69,0.3)' }}
+          style={{ backgroundColor: 'rgba(14,104,69,0.15)', color: '#0E6845', border: '1px solid rgba(14,104,69,0.3)' }}
         >
-          <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: '#4ade80' }} />
+          <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: '#0E6845' }} />
           En línea
         </span>
       </div>

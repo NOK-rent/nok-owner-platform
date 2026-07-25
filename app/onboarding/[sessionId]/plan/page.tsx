@@ -68,7 +68,7 @@ export default function PlanUploadPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#F0EFED]">
       <div className="border-b border-gray-100 px-6 py-4 flex items-center justify-between">
         <span className="text-xl font-bold tracking-widest">NOK</span>
         <div className="flex items-center gap-2 text-xs text-gray-400">

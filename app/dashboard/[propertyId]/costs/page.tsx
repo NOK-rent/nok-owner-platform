@@ -155,7 +155,7 @@ export default async function CostsPage({ params }: Props) {
 
         <button
           type="submit"
-          className="px-5 py-2.5 bg-[#833B0E] hover:bg-[#a04d1c] text-white text-sm font-semibold rounded-lg transition-colors"
+          className="px-5 py-2.5 bg-[#833B0E] hover:bg-[#6B3009] text-white text-sm font-semibold rounded-lg transition-colors"
         >
           Agregar costo
         </button>

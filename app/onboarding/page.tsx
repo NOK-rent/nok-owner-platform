@@ -57,7 +57,7 @@ export default function OnboardingStartPage() {
   const selectClass = "w-full border border-[#C8C8C8] rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0080C6] focus:border-transparent transition bg-white"
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#F0EFED]">
       {/* Header */}
       <header className="border-b border-[#EFEFEF] px-6 py-4">
         <Image src="/brand/nok-logo-dark.png" alt="NOK" width={120} height={32} priority />
@@ -69,7 +69,7 @@ export default function OnboardingStartPage() {
           <p className="text-xs font-semibold tracking-widest text-[#0080C6] uppercase mb-3">
             Evaluación gratuita
           </p>
-          <h1 className="text-3xl font-bold text-[#1D1D1B] mb-3 leading-tight">
+          <h1 className="text-3xl font-bold text-[#1A1A1A] mb-3 leading-tight">
             Empieza a ganar con tu apartamento
           </h1>
           <p className="text-[#8A8A8A] text-base">
@@ -82,7 +82,7 @@ export default function OnboardingStartPage() {
           <div className="space-y-4">
             <h2 className="text-xs font-semibold text-[#8A8A8A] uppercase tracking-widest">Tus datos</h2>
             <div>
-              <label className="block text-sm font-medium text-[#1D1D1B] mb-1.5">Nombre completo</label>
+              <label className="block text-sm font-medium text-[#1A1A1A] mb-1.5">Nombre completo</label>
               <input
                 type="text"
                 required
@@ -94,7 +94,7 @@ export default function OnboardingStartPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#1D1D1B] mb-1.5">Email</label>
+                <label className="block text-sm font-medium text-[#1A1A1A] mb-1.5">Email</label>
                 <input
                   type="email"
                   required
@@ -105,7 +105,7 @@ export default function OnboardingStartPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#1D1D1B] mb-1.5">WhatsApp</label>
+                <label className="block text-sm font-medium text-[#1A1A1A] mb-1.5">WhatsApp</label>
                 <input
                   type="tel"
                   value={form.owner_phone}
@@ -121,7 +121,7 @@ export default function OnboardingStartPage() {
           <div className="space-y-4">
             <h2 className="text-xs font-semibold text-[#8A8A8A] uppercase tracking-widest">Tu apartamento</h2>
             <div>
-              <label className="block text-sm font-medium text-[#1D1D1B] mb-1.5">Dirección</label>
+              <label className="block text-sm font-medium text-[#1A1A1A] mb-1.5">Dirección</label>
               <input
                 type="text"
                 required
@@ -133,7 +133,7 @@ export default function OnboardingStartPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#1D1D1B] mb-1.5">Ciudad</label>
+                <label className="block text-sm font-medium text-[#1A1A1A] mb-1.5">Ciudad</label>
                 <select value={form.property_city} onChange={e => setForm(f => ({ ...f, property_city: e.target.value }))} className={selectClass}>
                   <option>Santo Domingo</option>
                   <option>Punta Cana</option>
@@ -145,7 +145,7 @@ export default function OnboardingStartPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#1D1D1B] mb-1.5">País</label>
+                <label className="block text-sm font-medium text-[#1A1A1A] mb-1.5">País</label>
                 <select value={form.property_country} onChange={e => setForm(f => ({ ...f, property_country: e.target.value }))} className={selectClass}>
                   <option value="DO">República Dominicana</option>
                   <option value="CO">Colombia</option>
@@ -154,14 +154,14 @@ export default function OnboardingStartPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#1D1D1B] mb-1.5">Habitaciones</label>
+                <label className="block text-sm font-medium text-[#1A1A1A] mb-1.5">Habitaciones</label>
                 <select value={form.bedrooms} onChange={e => setForm(f => ({ ...f, bedrooms: e.target.value }))} className={selectClass}>
                   <option value="">No sé aún</option>
                   {[1,2,3,4,5].map(n => <option key={n} value={n}>{n} habitación{n > 1 ? 'es' : ''}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#1D1D1B] mb-1.5">Baños</label>
+                <label className="block text-sm font-medium text-[#1A1A1A] mb-1.5">Baños</label>
                 <select value={form.bathrooms} onChange={e => setForm(f => ({ ...f, bathrooms: e.target.value }))} className={selectClass}>
                   <option value="">No sé aún</option>
                   {[1,2,3,4].map(n => <option key={n} value={n}>{n} baño{n > 1 ? 's' : ''}</option>)}
@@ -184,7 +184,7 @@ export default function OnboardingStartPage() {
                 }`}
               >
                 <div className="text-2xl mb-2">🏗️</div>
-                <div className={`font-semibold text-sm ${apartmentType === 'empty' ? 'text-[#0080C6]' : 'text-[#1D1D1B]'}`}>
+                <div className={`font-semibold text-sm ${apartmentType === 'empty' ? 'text-[#0080C6]' : 'text-[#1A1A1A]'}`}>
                   Vacío / sin muebles
                 </div>
                 <div className="text-xs mt-1 text-[#8A8A8A]">
@@ -201,7 +201,7 @@ export default function OnboardingStartPage() {
                 }`}
               >
                 <div className="text-2xl mb-2">🛋️</div>
-                <div className={`font-semibold text-sm ${apartmentType === 'furnished' ? 'text-[#0080C6]' : 'text-[#1D1D1B]'}`}>
+                <div className={`font-semibold text-sm ${apartmentType === 'furnished' ? 'text-[#0080C6]' : 'text-[#1A1A1A]'}`}>
                   Con muebles
                 </div>
                 <div className="text-xs mt-1 text-[#8A8A8A]">

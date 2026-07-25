@@ -54,8 +54,8 @@ export default function SupportForm({ propertyId }: Props) {
               </svg>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-[#F2F2F2]">Preguntale al equipo</h3>
-              <p className="text-xs" style={{ color: 'rgba(242,242,242,0.4)' }}>
+              <h3 className="text-sm font-semibold text-[#1A1A1A]">Preguntale al equipo</h3>
+              <p className="text-xs" style={{ color: 'rgba(26,26,26,0.4)' }}>
                 Consultas, solicitudes o dudas sobre tu propiedad
               </p>
             </div>
@@ -65,7 +65,7 @@ export default function SupportForm({ propertyId }: Props) {
             className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200"
             style={{
               backgroundColor: 'rgba(131, 59, 14,0.15)',
-              color: '#B9B5DC',
+              color: '#833B0E',
               border: '1px solid rgba(131, 59, 14,0.25)',
             }}
             onMouseEnter={(e) => {
@@ -96,8 +96,8 @@ export default function SupportForm({ propertyId }: Props) {
           </svg>
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-[#F2F2F2]">Preguntale al equipo</h3>
-          <p className="text-xs" style={{ color: 'rgba(242,242,242,0.4)' }}>
+          <h3 className="text-sm font-semibold text-[#1A1A1A]">Preguntale al equipo</h3>
+          <p className="text-xs" style={{ color: 'rgba(26,26,26,0.4)' }}>
             Tu consulta sera asignada automaticamente al area responsable
           </p>
         </div>
@@ -108,13 +108,13 @@ export default function SupportForm({ propertyId }: Props) {
           className="flex items-center gap-3 p-4 rounded-xl"
           style={{ backgroundColor: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)' }}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0E6845" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
             <polyline points="22 4 12 14.01 9 11.01"/>
           </svg>
           <div>
-            <p className="text-sm font-medium text-[#4ade80]">Consulta enviada</p>
-            <p className="text-xs" style={{ color: 'rgba(242,242,242,0.4)' }}>
+            <p className="text-sm font-medium text-[#0E6845]">Consulta enviada</p>
+            <p className="text-xs" style={{ color: 'rgba(26,26,26,0.4)' }}>
               Asignada a {result.area} — te responderemos pronto
             </p>
           </div>
@@ -124,7 +124,7 @@ export default function SupportForm({ propertyId }: Props) {
           className="flex items-center gap-3 p-4 rounded-xl mb-4"
           style={{ backgroundColor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}
         >
-          <p className="text-sm text-red-400">Error al enviar. Intenta de nuevo.</p>
+          <p className="text-sm text-[#F20022]">Error al enviar. Intenta de nuevo.</p>
         </div>
       ) : null}
 
@@ -135,10 +135,10 @@ export default function SupportForm({ propertyId }: Props) {
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Escribe tu consulta aqui... Ejemplo: Quiero bloquear fechas del 15 al 20 de diciembre para uso personal."
             rows={4}
-            className="w-full rounded-xl px-4 py-3 text-sm text-[#F2F2F2] placeholder:text-[#F2F2F2]/25 resize-none focus:outline-none focus:ring-1 focus:ring-[#833B0E]/50"
+            className="w-full rounded-xl px-4 py-3 text-sm text-[#1A1A1A] placeholder:text-[#1A1A1A]/25 resize-none focus:outline-none focus:ring-1 focus:ring-[#833B0E]/50"
             style={{
-              backgroundColor: 'rgba(20,20,19,0.6)',
-              border: '1px solid rgba(242,242,242,0.08)',
+              backgroundColor: 'rgba(255,255,255,0.6)',
+              border: '1px solid rgba(26,26,26,0.08)',
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
@@ -148,14 +148,14 @@ export default function SupportForm({ propertyId }: Props) {
             }}
           />
           <div className="flex items-center justify-between mt-3">
-            <p className="text-[10px]" style={{ color: 'rgba(242,242,242,0.2)' }}>
+            <p className="text-[10px]" style={{ color: 'rgba(26,26,26,0.2)' }}>
               Cmd+Enter para enviar
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => { setOpen(false); setMessage(''); setResult(null) }}
                 className="px-4 py-2 rounded-lg text-sm transition-colors"
-                style={{ color: 'rgba(242,242,242,0.4)' }}
+                style={{ color: 'rgba(26,26,26,0.4)' }}
               >
                 Cancelar
               </button>

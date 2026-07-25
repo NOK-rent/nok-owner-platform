@@ -68,20 +68,20 @@ function RateChart({ days }: { days: RateDay[] }) {
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label="Tu tarifa comparada con la mediana y el rango de la zona">
       {gridVals.map(v => (
         <g key={v}>
-          <line x1={P.l} x2={W - P.r} y1={y(v)} y2={y(v)} stroke="rgba(242,242,242,0.07)" strokeWidth={1} />
-          <text x={P.l - 8} y={y(v) + 4} textAnchor="end" fontSize={11} fill="rgba(242,242,242,0.35)">${v}</text>
+          <line x1={P.l} x2={W - P.r} y1={y(v)} y2={y(v)} stroke="rgba(26,26,26,0.07)" strokeWidth={1} />
+          <text x={P.l - 8} y={y(v) + 4} textAnchor="end" fontSize={11} fill="rgba(26,26,26,0.35)">${v}</text>
         </g>
       ))}
       {pts.map((d, i) =>
         i % 10 === 0 ? (
-          <text key={d.date} x={x(i)} y={H - 8} textAnchor="middle" fontSize={11} fill="rgba(242,242,242,0.35)">
+          <text key={d.date} x={x(i)} y={H - 8} textAnchor="middle" fontSize={11} fill="rgba(26,26,26,0.35)">
             {fmtDay(d.date)}
           </text>
         ) : null,
       )}
       <path d={band} fill="rgba(148,184,207,0.14)" />
-      <path d={line('zoneMedian')} fill="none" stroke="#3D9BD1" strokeWidth={2} strokeLinejoin="round" />
-      <path d={line('ours')} fill="none" stroke="#4ade80" strokeWidth={2.5} strokeLinejoin="round" />
+      <path d={line('zoneMedian')} fill="none" stroke="#0080C6" strokeWidth={2} strokeLinejoin="round" />
+      <path d={line('ours')} fill="none" stroke="#0E6845" strokeWidth={2.5} strokeLinejoin="round" />
     </svg>
   )
 }
@@ -101,19 +101,19 @@ function OccDailyChart({ zone, booked }: { zone: { date: string; occ: number }[]
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label="Ocupación diaria de la zona y tus noches ya reservadas">
       {[0, 0.25, 0.5, 0.75, 1].map(v => (
         <g key={v}>
-          <line x1={P.l} x2={W - P.r} y1={y(v)} y2={y(v)} stroke="rgba(242,242,242,0.07)" strokeWidth={1} />
-          <text x={P.l - 8} y={y(v) + 4} textAnchor="end" fontSize={11} fill="rgba(242,242,242,0.35)">{Math.round(v * 100)}%</text>
+          <line x1={P.l} x2={W - P.r} y1={y(v)} y2={y(v)} stroke="rgba(26,26,26,0.07)" strokeWidth={1} />
+          <text x={P.l - 8} y={y(v) + 4} textAnchor="end" fontSize={11} fill="rgba(26,26,26,0.35)">{Math.round(v * 100)}%</text>
         </g>
       ))}
       {zone.map((d, i) =>
         i % 10 === 0 ? (
-          <text key={d.date} x={x(i)} y={H - 26} textAnchor="middle" fontSize={11} fill="rgba(242,242,242,0.35)">{fmtDay(d.date)}</text>
+          <text key={d.date} x={x(i)} y={H - 26} textAnchor="middle" fontSize={11} fill="rgba(26,26,26,0.35)">{fmtDay(d.date)}</text>
         ) : null,
       )}
       <path d={area} fill="rgba(61,155,209,0.10)" />
-      <path d={line} fill="none" stroke="#3D9BD1" strokeWidth={2} strokeLinejoin="round" />
+      <path d={line} fill="none" stroke="#0080C6" strokeWidth={2} strokeLinejoin="round" />
       {/* booked strip */}
-      <text x={P.l - 8} y={stripY + 8} textAnchor="end" fontSize={10} fill="rgba(242,242,242,0.35)">Tus noches</text>
+      <text x={P.l - 8} y={stripY + 8} textAnchor="end" fontSize={10} fill="rgba(26,26,26,0.35)">Tus noches</text>
       {zone.map((d, i) => (
         <rect
           key={d.date}
@@ -122,7 +122,7 @@ function OccDailyChart({ zone, booked }: { zone: { date: string; occ: number }[]
           width={Math.max(1.5, bw - 1)}
           height={10}
           rx={2}
-          fill={booked.has(d.date) ? '#4ade80' : 'rgba(242,242,242,0.08)'}
+          fill={booked.has(d.date) ? '#0E6845' : 'rgba(26,26,26,0.08)'}
         />
       ))}
     </svg>
@@ -141,17 +141,17 @@ function BaseBreakdown({ bp }: { bp: BasePriceBreakdown }) {
         const w = Math.max(3, Math.round((Math.abs(it.value) / maxAbs) * 100))
         return (
           <div key={it.label} className="grid items-center gap-3" style={{ gridTemplateColumns: '170px 1fr 64px' }}>
-            <span className="text-xs" style={{ color: 'rgba(242,242,242,0.5)' }}>{it.label}</span>
-            <div className="h-2.5 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(242,242,242,0.05)' }}>
+            <span className="text-xs" style={{ color: 'rgba(26,26,26,0.5)' }}>{it.label}</span>
+            <div className="h-2.5 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(26,26,26,0.05)' }}>
               <div
                 className="h-full rounded-full"
                 style={{
                   width: `${w}%`,
-                  backgroundColor: isBase ? '#B9B5DC' : pos ? '#4ade80' : 'rgba(242,100,100,0.75)',
+                  backgroundColor: isBase ? '#B9B5DC' : pos ? '#0E6845' : 'rgba(220,38,38,0.8)',
                 }}
               />
             </div>
-            <span className="text-xs text-right tabular-nums" style={{ color: isBase ? '#B9B5DC' : pos ? '#4ade80' : 'rgba(242,100,100,0.85)' }}>
+            <span className="text-xs text-right tabular-nums" style={{ color: isBase ? '#B9B5DC' : pos ? '#0E6845' : '#DC2626' }}>
               {isBase ? '' : it.value >= 0 ? '+' : '−'}${Math.abs(Math.round(it.value))}
             </span>
           </div>
@@ -173,24 +173,24 @@ function OccCompare({ windows }: { windows: OccWindow[] }) {
       {windows.map(w => (
         <div key={w.label}>
           <div className="flex items-center justify-between text-xs mb-1.5">
-            <span style={{ color: 'rgba(242,242,242,0.45)' }}>{w.label}</span>
-            <span style={{ color: 'rgba(242,242,242,0.65)' }}>
+            <span style={{ color: 'rgba(26,26,26,0.45)' }}>{w.label}</span>
+            <span style={{ color: 'rgba(26,26,26,0.65)' }}>
               Tu unidad {fmtPct01(w.unit)} · Zona {fmtPct01(w.zone)}
             </span>
           </div>
           <div className="space-y-1">
-            <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(242,242,242,0.06)' }}>
-              <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.round((w.unit ?? 0) * 100))}%`, backgroundColor: '#4ade80' }} />
+            <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(26,26,26,0.06)' }}>
+              <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.round((w.unit ?? 0) * 100))}%`, backgroundColor: '#0E6845' }} />
             </div>
-            <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(242,242,242,0.06)' }}>
-              <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.round((w.zone ?? 0) * 100))}%`, backgroundColor: '#3D9BD1' }} />
+            <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(26,26,26,0.06)' }}>
+              <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.round((w.zone ?? 0) * 100))}%`, backgroundColor: '#0080C6' }} />
             </div>
           </div>
         </div>
       ))}
-      <div className="flex gap-5 pt-1 text-xs" style={{ color: 'rgba(242,242,242,0.45)' }}>
-        <span className="flex items-center gap-2"><span className="inline-block w-3 h-1.5 rounded-full" style={{ backgroundColor: '#4ade80' }} /> Tu unidad</span>
-        <span className="flex items-center gap-2"><span className="inline-block w-3 h-1.5 rounded-full" style={{ backgroundColor: '#3D9BD1' }} /> Zona</span>
+      <div className="flex gap-5 pt-1 text-xs" style={{ color: 'rgba(26,26,26,0.45)' }}>
+        <span className="flex items-center gap-2"><span className="inline-block w-3 h-1.5 rounded-full" style={{ backgroundColor: '#0E6845' }} /> Tu unidad</span>
+        <span className="flex items-center gap-2"><span className="inline-block w-3 h-1.5 rounded-full" style={{ backgroundColor: '#0080C6' }} /> Zona</span>
       </div>
     </div>
   )
@@ -199,9 +199,9 @@ function OccCompare({ windows }: { windows: OccWindow[] }) {
 function MetricCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="rounded-2xl p-5 nok-card">
-      <p className="text-xs uppercase tracking-widest mb-3" style={{ color: 'rgba(242,242,242,0.35)' }}>{label}</p>
-      <p className="font-serif text-4xl font-light text-[#F2F2F2] leading-none">{value}</p>
-      {sub && <p className="text-xs mt-2" style={{ color: 'rgba(242,242,242,0.3)' }}>{sub}</p>}
+      <p className="text-xs uppercase tracking-widest mb-3" style={{ color: 'rgba(26,26,26,0.35)' }}>{label}</p>
+      <p className="font-serif text-4xl font-light text-[#1A1A1A] leading-none">{value}</p>
+      {sub && <p className="text-xs mt-2" style={{ color: 'rgba(26,26,26,0.3)' }}>{sub}</p>}
     </div>
   )
 }
@@ -234,26 +234,26 @@ export default async function RevenuePage({ params }: Props) {
   }
 
   return (
-    <div className="min-h-screen pt-16" style={{ backgroundColor: '#1D1D1B' }}>
+    <div className="min-h-screen pt-16" style={{ backgroundColor: '#F0EFED' }}>
       <div className="max-w-6xl mx-auto px-6 lg:px-10 py-10 space-y-10">
 
         {/* Header */}
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] mb-2" style={{ color: 'rgba(242,242,242,0.35)' }}>
+          <p className="text-xs uppercase tracking-[0.2em] mb-2" style={{ color: 'rgba(26,26,26,0.35)' }}>
             Revenue Management NOK
           </p>
-          <h1 className="font-serif text-4xl font-light text-[#F2F2F2]">
+          <h1 className="font-serif text-4xl font-light text-[#1A1A1A]">
             La estrategia detrás de {property.name}
           </h1>
-          <p className="text-sm mt-2" style={{ color: 'rgba(242,242,242,0.45)' }}>
+          <p className="text-sm mt-2" style={{ color: 'rgba(26,26,26,0.45)' }}>
             Cómo decidimos tu tarifa cada día y cómo se compara tu unidad con su zona.
           </p>
         </div>
 
         {!snap ? (
           <div className="rounded-2xl p-8 nok-card">
-            <p className="font-serif text-2xl font-light text-[#F2F2F2] mb-2">Estamos preparando esta vista</p>
-            <p className="text-sm" style={{ color: 'rgba(242,242,242,0.5)' }}>
+            <p className="font-serif text-2xl font-light text-[#1A1A1A] mb-2">Estamos preparando esta vista</p>
+            <p className="text-sm" style={{ color: 'rgba(26,26,26,0.5)' }}>
               El módulo de Revenue Management se está configurando para esta propiedad. Muy pronto vas a poder ver aquí la estrategia de precios y la comparación con tu zona.
             </p>
           </div>
@@ -281,15 +281,15 @@ export default async function RevenuePage({ params }: Props) {
 
             {/* Strategy */}
             <div>
-              <h2 className="font-serif text-2xl font-light text-[#F2F2F2] mb-1">Qué estamos haciendo con tu tarifa</h2>
-              <p className="text-sm mb-5" style={{ color: 'rgba(242,242,242,0.45)' }}>
+              <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-1">Qué estamos haciendo con tu tarifa</h2>
+              <p className="text-sm mb-5" style={{ color: 'rgba(26,26,26,0.45)' }}>
                 Estas son las palancas configuradas específicamente para tu unidad{snap.tierName ? ` (plan ${snap.tierName})` : ''}.
               </p>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {snap.strategy.map(s => (
                   <div key={s.tag} className="rounded-2xl p-5 nok-card">
                     <p className="text-xs uppercase tracking-widest mb-2" style={{ color: '#D6A700' }}>{s.tag}</p>
-                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(242,242,242,0.65)' }}>{s.text}</p>
+                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(26,26,26,0.65)' }}>{s.text}</p>
                   </div>
                 ))}
               </div>
@@ -299,15 +299,15 @@ export default async function RevenuePage({ params }: Props) {
             {snap.rateDays.length >= 7 && (
               <div className="rounded-2xl p-6 nok-card">
                 <div className="flex flex-wrap items-baseline justify-between gap-3 mb-4">
-                  <h2 className="font-serif text-2xl font-light text-[#F2F2F2]">Tu tarifa vs. la zona</h2>
-                  <div className="flex gap-5 text-xs" style={{ color: 'rgba(242,242,242,0.45)' }}>
-                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-1 rounded-full" style={{ backgroundColor: '#4ade80' }} /> Tu tarifa</span>
-                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-1 rounded-full" style={{ backgroundColor: '#3D9BD1' }} /> Mediana de la zona</span>
+                  <h2 className="font-serif text-2xl font-light text-[#1A1A1A]">Tu tarifa vs. la zona</h2>
+                  <div className="flex gap-5 text-xs" style={{ color: 'rgba(26,26,26,0.45)' }}>
+                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-1 rounded-full" style={{ backgroundColor: '#0E6845' }} /> Tu tarifa</span>
+                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-1 rounded-full" style={{ backgroundColor: '#0080C6' }} /> Mediana de la zona</span>
                     <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-2.5 rounded-sm" style={{ backgroundColor: 'rgba(148,184,207,0.25)' }} /> Rango de la zona</span>
                   </div>
                 </div>
                 <RateChart days={snap.rateDays} />
-                <p className="text-xs mt-3" style={{ color: 'rgba(242,242,242,0.35)' }}>
+                <p className="text-xs mt-3" style={{ color: 'rgba(26,26,26,0.35)' }}>
                   Próximas {Math.min(60, snap.rateDays.length)} noches, en USD. La zona son las propiedades comparables alrededor de tu unidad.
                 </p>
               </div>
@@ -317,14 +317,14 @@ export default async function RevenuePage({ params }: Props) {
             {snap.zoneOccDaily.length >= 7 && (
               <div className="rounded-2xl p-6 nok-card">
                 <div className="flex flex-wrap items-baseline justify-between gap-3 mb-4">
-                  <h2 className="font-serif text-2xl font-light text-[#F2F2F2]">Ocupación de la zona, día a día</h2>
-                  <div className="flex gap-5 text-xs" style={{ color: 'rgba(242,242,242,0.45)' }}>
-                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-1 rounded-full" style={{ backgroundColor: '#3D9BD1' }} /> % de la zona ya reservado</span>
-                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-2.5 rounded-sm" style={{ backgroundColor: '#4ade80' }} /> Tus noches reservadas</span>
+                  <h2 className="font-serif text-2xl font-light text-[#1A1A1A]">Ocupación de la zona, día a día</h2>
+                  <div className="flex gap-5 text-xs" style={{ color: 'rgba(26,26,26,0.45)' }}>
+                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-1 rounded-full" style={{ backgroundColor: '#0080C6' }} /> % de la zona ya reservado</span>
+                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-2.5 rounded-sm" style={{ backgroundColor: '#0E6845' }} /> Tus noches reservadas</span>
                   </div>
                 </div>
                 <OccDailyChart zone={snap.zoneOccDaily} booked={bookedDays} />
-                <p className="text-xs mt-3" style={{ color: 'rgba(242,242,242,0.35)' }}>
+                <p className="text-xs mt-3" style={{ color: 'rgba(26,26,26,0.35)' }}>
                   La línea muestra qué porcentaje de las propiedades comparables ya está reservado para cada noche. La franja verde son tus noches ya vendidas: cada noche verde sobre una zona con poca ocupación es una noche que le ganamos al mercado.
                 </p>
               </div>
@@ -333,15 +333,15 @@ export default async function RevenuePage({ params }: Props) {
             {/* Occupancy vs zone */}
             <div className="grid lg:grid-cols-2 gap-4 items-start">
               <div className="rounded-2xl p-6 nok-card">
-                <h2 className="font-serif text-2xl font-light text-[#F2F2F2] mb-4">Ocupación: tu unidad vs. la zona</h2>
+                <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-4">Ocupación: tu unidad vs. la zona</h2>
                 <OccCompare windows={snap.occWindows} />
               </div>
 
               {/* Signals */}
               <div className="rounded-2xl p-6 nok-card">
-                <h2 className="font-serif text-2xl font-light text-[#F2F2F2] mb-4">Señales del motor</h2>
+                <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-4">Señales del motor</h2>
                 {snap.flags.length === 0 ? (
-                  <p className="text-sm" style={{ color: 'rgba(242,242,242,0.5)' }}>
+                  <p className="text-sm" style={{ color: 'rgba(26,26,26,0.5)' }}>
                     Sin alertas activas — la estrategia está funcionando dentro de lo esperado. ✓
                   </p>
                 ) : (
@@ -357,8 +357,8 @@ export default async function RevenuePage({ params }: Props) {
                             !
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-[#F2F2F2]">{es?.title ?? f.name}</p>
-                            <p className="text-xs mt-1 leading-relaxed" style={{ color: 'rgba(242,242,242,0.5)' }}>
+                            <p className="text-sm font-medium text-[#1A1A1A]">{es?.title ?? f.name}</p>
+                            <p className="text-xs mt-1 leading-relaxed" style={{ color: 'rgba(26,26,26,0.5)' }}>
                               {es?.text ?? f.description}
                             </p>
                           </div>
@@ -373,8 +373,8 @@ export default async function RevenuePage({ params }: Props) {
             {/* Base price breakdown */}
             {snap.basePrice && (
               <div className="rounded-2xl p-6 nok-card">
-                <h2 className="font-serif text-2xl font-light text-[#F2F2F2] mb-1">De dónde sale tu precio base</h2>
-                <p className="text-sm mb-6" style={{ color: 'rgba(242,242,242,0.45)' }}>
+                <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-1">De dónde sale tu precio base</h2>
+                <p className="text-sm mb-6" style={{ color: 'rgba(26,26,26,0.45)' }}>
                   El motor parte de lo que cobra tu mercado y lo ajusta por las características reales de tu unidad. Así se construye la recomendación de hoy:
                 </p>
                 <div className="grid lg:grid-cols-2 gap-8 items-start">
@@ -382,15 +382,15 @@ export default async function RevenuePage({ params }: Props) {
                   <div className="space-y-4">
                     <div className="flex items-end gap-6">
                       <div>
-                        <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'rgba(242,242,242,0.35)' }}>Recomendado</p>
-                        <p className="font-serif text-4xl font-light text-[#F2F2F2]">{fmtUsd(snap.basePrice.recommended)}</p>
+                        <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'rgba(26,26,26,0.35)' }}>Recomendado</p>
+                        <p className="font-serif text-4xl font-light text-[#1A1A1A]">{fmtUsd(snap.basePrice.recommended)}</p>
                       </div>
                       <div>
-                        <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'rgba(242,242,242,0.35)' }}>Aplicado</p>
-                        <p className="font-serif text-4xl font-light" style={{ color: '#4ade80' }}>{fmtUsd(snap.basePrice.selected)}</p>
+                        <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'rgba(26,26,26,0.35)' }}>Aplicado</p>
+                        <p className="font-serif text-4xl font-light" style={{ color: '#0E6845' }}>{fmtUsd(snap.basePrice.selected)}</p>
                       </div>
                     </div>
-                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(242,242,242,0.55)' }}>
+                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(26,26,26,0.55)' }}>
                       {snap.basePrice.selected < snap.basePrice.recommended
                         ? `Hoy aplicamos un precio base ${fmtUsd(snap.basePrice.recommended - snap.basePrice.selected)} por debajo del recomendado — un perfil deliberadamente competitivo para sostener la ocupación por encima de la zona. Cuando el ritmo de reservas lo permite, lo acercamos al recomendado.`
                         : snap.basePrice.selected > snap.basePrice.recommended
@@ -398,7 +398,7 @@ export default async function RevenuePage({ params }: Props) {
                           : `Hoy aplicamos exactamente el precio base recomendado por el motor.`}
                       {snap.basePrice.anchorCredibility != null && ` Confianza del modelo: ${snap.basePrice.anchorCredibility}%.`}
                     </p>
-                    <p className="text-xs leading-relaxed" style={{ color: 'rgba(242,242,242,0.35)' }}>
+                    <p className="text-xs leading-relaxed" style={{ color: 'rgba(26,26,26,0.35)' }}>
                       Rango de trabajo del motor: {fmtUsd(snap.basePrice.conservative)} (conservador) – {fmtUsd(snap.basePrice.aggressive)} (agresivo). Sobre este precio base actúan después la temporada, los eventos, el día de la semana y la demanda en tiempo real.
                     </p>
                   </div>
@@ -408,32 +408,32 @@ export default async function RevenuePage({ params }: Props) {
 
             {/* How the engine responds to demand */}
             <div>
-              <h2 className="font-serif text-2xl font-light text-[#F2F2F2] mb-1">Cómo responde el motor a la demanda</h2>
-              <p className="text-sm mb-5" style={{ color: 'rgba(242,242,242,0.45)' }}>
+              <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-1">Cómo responde el motor a la demanda</h2>
+              <p className="text-sm mb-5" style={{ color: 'rgba(26,26,26,0.45)' }}>
                 Tu tarifa no es fija: reacciona todos los días a lo que pasa en tu zona.
               </p>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {snap.demandSensitivityPct != null && (
                   <div className="rounded-2xl p-5 nok-card">
                     <p className="text-xs uppercase tracking-widest mb-2" style={{ color: '#D6A700' }}>Sensibilidad a la demanda</p>
-                    <p className="font-serif text-3xl font-light text-[#F2F2F2] mb-2">{snap.demandSensitivityPct}%</p>
-                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(242,242,242,0.6)' }}>
+                    <p className="font-serif text-3xl font-light text-[#1A1A1A] mb-2">{snap.demandSensitivityPct}%</p>
+                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(26,26,26,0.6)' }}>
                       Cuando la zona se llena más rápido de lo esperado, la tarifa sube; cuando el ritmo afloja, baja para no perder noches. Al {snap.demandSensitivityPct}%, tu unidad responde {snap.demandSensitivityPct >= 100 ? 'con toda la fuerza de la señal del mercado' : 'de forma amortiguada a la señal del mercado'}.
                     </p>
                   </div>
                 )}
                 <div className="rounded-2xl p-5 nok-card">
                   <p className="text-xs uppercase tracking-widest mb-2" style={{ color: '#D6A700' }}>Ritmo de ocupación</p>
-                  <p className="font-serif text-3xl font-light text-[#F2F2F2] mb-2">{snap.pacingAdjusted ? 'Activo' : 'Estándar'}</p>
-                  <p className="text-sm leading-relaxed" style={{ color: 'rgba(242,242,242,0.6)' }}>
+                  <p className="font-serif text-3xl font-light text-[#1A1A1A] mb-2">{snap.pacingAdjusted ? 'Activo' : 'Estándar'}</p>
+                  <p className="text-sm leading-relaxed" style={{ color: 'rgba(26,26,26,0.6)' }}>
                     El motor compara cuántas noches deberías tener vendidas a esta altura vs. cuántas tienes. Si vas adelantado, defiende tarifa; si vas atrasado, se vuelve más agresivo para cerrar la brecha.
                   </p>
                 </div>
                 {snap.historicalAnchoringPct != null && (
                   <div className="rounded-2xl p-5 nok-card">
                     <p className="text-xs uppercase tracking-widest mb-2" style={{ color: '#D6A700' }}>Anclaje al historial</p>
-                    <p className="font-serif text-3xl font-light text-[#F2F2F2] mb-2">{snap.historicalAnchoringPct}%</p>
-                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(242,242,242,0.6)' }}>
+                    <p className="font-serif text-3xl font-light text-[#1A1A1A] mb-2">{snap.historicalAnchoringPct}%</p>
+                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(26,26,26,0.6)' }}>
                       {snap.historicalAnchoringPct === 0
                         ? 'Tu precio se basa 100% en el mercado actual, sin dejarse arrastrar por tarifas históricas de la unidad — ideal para capturar el potencial real de cada temporada.'
                         : `Un ${snap.historicalAnchoringPct}% del precio se ancla a las tarifas históricas de tu unidad para dar estabilidad, y el resto sigue al mercado actual.`}
@@ -446,7 +446,7 @@ export default async function RevenuePage({ params }: Props) {
             {/* Insights */}
             {(snap.revenueScore30 != null || snap.occRatio30 != null || snap.upcomingSeasons.length > 0) && (
               <div>
-                <h2 className="font-serif text-2xl font-light text-[#F2F2F2] mb-5">Insights de tu unidad</h2>
+                <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-5">Insights de tu unidad</h2>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   {snap.revenueScore30 != null && (
                     <MetricCard
@@ -467,12 +467,12 @@ export default async function RevenuePage({ params }: Props) {
                   )}
                   {snap.upcomingSeasons.length > 0 && (
                     <div className="rounded-2xl p-5 nok-card">
-                      <p className="text-xs uppercase tracking-widest mb-3" style={{ color: 'rgba(242,242,242,0.35)' }}>Próximas temporadas</p>
+                      <p className="text-xs uppercase tracking-widest mb-3" style={{ color: 'rgba(26,26,26,0.35)' }}>Próximas temporadas</p>
                       <div className="space-y-2">
                         {snap.upcomingSeasons.map(s => (
                           <div key={s.name} className="flex items-baseline justify-between gap-2 text-sm">
-                            <span className="text-[#F2F2F2]">{s.name}</span>
-                            <span className="text-xs whitespace-nowrap" style={{ color: 'rgba(242,242,242,0.4)' }}>{fmtRange(s)}</span>
+                            <span className="text-[#1A1A1A]">{s.name}</span>
+                            <span className="text-xs whitespace-nowrap" style={{ color: 'rgba(26,26,26,0.4)' }}>{fmtRange(s)}</span>
                           </div>
                         ))}
                       </div>
@@ -483,7 +483,7 @@ export default async function RevenuePage({ params }: Props) {
             )}
 
             {/* Methodology note */}
-            <p className="text-xs leading-relaxed" style={{ color: 'rgba(242,242,242,0.3)' }}>
+            <p className="text-xs leading-relaxed" style={{ color: 'rgba(26,26,26,0.3)' }}>
               Los precios se recalculan y publican automáticamente todos los días{snap.horizonDays ? ` con un horizonte de ${snap.horizonDays} días` : ''}.
               Datos de zona actualizados varias veces al día por Revenue Management NOK. Los montos de la zona pueden convertirse de moneda local a USD con la tasa del día.
             </p>
@@ -493,10 +493,10 @@ export default async function RevenuePage({ params }: Props) {
         {/* Footer */}
         <div
           className="flex items-center justify-between py-6 text-xs"
-          style={{ borderTop: '1px solid rgba(242,242,242,0.06)', color: 'rgba(242,242,242,0.2)' }}
+          style={{ borderTop: '1px solid rgba(26,26,26,0.06)', color: 'rgba(26,26,26,0.2)' }}
         >
           <span className="font-serif text-sm tracking-[0.2em]">NOK</span>
-          <span>Curated stays designed to flow with you · <a href="https://nok.rent" target="_blank" rel="noopener" className="hover:text-[#B9B5DC] transition-colors">nok.rent</a></span>
+          <span>Curated stays designed to flow with you · <a href="https://nok.rent" target="_blank" rel="noopener" className="hover:text-[#833B0E] transition-colors">nok.rent</a></span>
         </div>
       </div>
     </div>

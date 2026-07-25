@@ -31,10 +31,10 @@ export default function ProgressBar() {
               className={`
                 w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-300
                 ${isDone
-                  ? 'bg-[#D6A700] text-[#1D1D1B]'
+                  ? 'bg-[#D6A700] text-[#F0EFED]'
                   : isActive
-                    ? 'bg-[#F2F2F2] text-[#1D1D1B]'
-                    : 'bg-[#2A2A28] text-[rgba(242,242,242,0.35)]'
+                    ? 'bg-[#1A1A1A] text-[#F0EFED]'
+                    : 'bg-[#E5E3DF] text-[rgba(26,26,26,0.35)]'
                 }
               `}
             >
@@ -49,7 +49,7 @@ export default function ProgressBar() {
             <span
               className={`
                 text-sm font-medium transition-all duration-300 hidden sm:block
-                ${isActive ? 'text-[#F2F2F2]' : isDone ? 'text-[rgba(242,242,242,0.6)]' : 'text-[rgba(242,242,242,0.25)]'}
+                ${isActive ? 'text-[#1A1A1A]' : isDone ? 'text-[rgba(26,26,26,0.6)]' : 'text-[rgba(26,26,26,0.25)]'}
               `}
             >
               {step.label}
@@ -62,7 +62,7 @@ export default function ProgressBar() {
             {i > 0 && (
               <div
                 className={`w-8 sm:w-12 h-px mx-2 transition-colors duration-300 ${
-                  i <= currentIdx ? 'bg-[#D6A700]' : 'bg-[#2A2A28]'
+                  i <= currentIdx ? 'bg-[#D6A700]' : 'bg-[#E5E3DF]'
                 }`}
               />
             )}

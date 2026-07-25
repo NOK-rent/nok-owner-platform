@@ -93,8 +93,8 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
     <nav
       className="fixed top-0 left-0 right-0 z-50 flex items-center h-16 px-6 lg:px-10 gap-6"
       style={{
-        backgroundColor: '#141413',
-        borderBottom: '1px solid rgba(131, 59, 14,0.3)',
+        backgroundColor: 'rgba(240, 239, 237, 0.9)',
+        borderBottom: '1px solid rgba(26, 26, 26, 0.08)',
         backdropFilter: 'blur(12px)',
       }}
     >
@@ -102,13 +102,13 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
       <div className="flex items-center gap-5 shrink-0">
         <Link
           href="/dashboard"
-          className="font-serif text-2xl font-light tracking-[0.25em] text-[#F2F2F2] hover:text-[#B9B5DC] transition-colors duration-300"
+          className="font-serif text-2xl font-light tracking-[0.25em] text-[#1A1A1A] hover:text-[#833B0E] transition-colors duration-300"
         >
           NOK
         </Link>
 
         {/* Divider */}
-        <div className="h-5 w-px" style={{ backgroundColor: 'rgba(242,242,242,0.1)' }} />
+        <div className="h-5 w-px" style={{ backgroundColor: 'rgba(26,26,26,0.1)' }} />
 
         {/* Property selector */}
         {(properties.length > 1 || groups.length > 0) ? (
@@ -117,11 +117,11 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
               onClick={() => setShowPropMenu(v => !v)}
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all duration-200 cursor-pointer"
               style={{
-                color: 'rgba(242,242,242,0.55)',
-                border: '1px solid rgba(242,242,242,0.08)',
+                color: 'rgba(26,26,26,0.55)',
+                border: '1px solid rgba(26,26,26,0.08)',
               }}
-              onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#F2F2F2'}
-              onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'rgba(242,242,242,0.55)'}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#1A1A1A'}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'rgba(26,26,26,0.55)'}
             >
               <span className="max-w-[160px] truncate">{activeLabel}</span>
               <ChevronDown />
@@ -131,15 +131,15 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
               <div
                 className="absolute top-full left-0 mt-2 rounded-xl z-50 min-w-52"
                 style={{
-                  backgroundColor: '#1E1E1C',
-                  border: '1px solid rgba(242,242,242,0.08)',
-                  boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid rgba(26,26,26,0.08)',
+                  boxShadow: '0 16px 48px rgba(0,0,0,0.12)',
                   maxHeight: '70vh',
                   overflowY: 'auto',
                 }}
               >
                 {groups.length > 0 && (
-                  <div className="px-4 pt-2 pb-1 text-[10px] uppercase tracking-widest" style={{ color: 'rgba(242,242,242,0.35)' }}>Grupos</div>
+                  <div className="px-4 pt-2 pb-1 text-[10px] uppercase tracking-widest" style={{ color: 'rgba(26,26,26,0.35)' }}>Grupos</div>
                 )}
                 {groups.map(g => (
                   <button
@@ -147,16 +147,16 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
                     onClick={() => { router.push(`/dashboard/group/${g.id}/overview`); setShowPropMenu(false) }}
                     className="w-full text-left px-4 py-3 transition-colors duration-150 cursor-pointer"
                     style={{
-                      borderBottom: '1px solid rgba(242,242,242,0.05)',
+                      borderBottom: '1px solid rgba(26,26,26,0.05)',
                       backgroundColor: g.id === activeGroupId ? 'rgba(131, 59, 14,0.12)' : 'transparent',
                     }}
                   >
-                    <span className="block text-sm text-[#F2F2F2] font-medium">▦ {g.name}</span>
-                    <span className="block text-xs mt-0.5" style={{ color: 'rgba(242,242,242,0.4)' }}>Grupo consolidado</span>
+                    <span className="block text-sm text-[#1A1A1A] font-medium">▦ {g.name}</span>
+                    <span className="block text-xs mt-0.5" style={{ color: 'rgba(26,26,26,0.4)' }}>Grupo consolidado</span>
                   </button>
                 ))}
                 {properties.length > 0 && (
-                  <div className="px-4 pt-2 pb-1 text-[10px] uppercase tracking-widest" style={{ color: 'rgba(242,242,242,0.35)' }}>Propiedades</div>
+                  <div className="px-4 pt-2 pb-1 text-[10px] uppercase tracking-widest" style={{ color: 'rgba(26,26,26,0.35)' }}>Propiedades</div>
                 )}
                 {properties.map(p => (
                   <button
@@ -164,7 +164,7 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
                     onClick={() => { router.push(`/dashboard/${p.id}/overview`); setShowPropMenu(false) }}
                     className="w-full text-left px-4 py-3 transition-colors duration-150 cursor-pointer"
                     style={{
-                      borderBottom: '1px solid rgba(242,242,242,0.05)',
+                      borderBottom: '1px solid rgba(26,26,26,0.05)',
                       backgroundColor: p.id === activePropertyId ? 'rgba(131, 59, 14,0.12)' : 'transparent',
                     }}
                     onMouseEnter={e => {
@@ -176,9 +176,9 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
                         (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'
                     }}
                   >
-                    <span className="block text-sm text-[#F2F2F2] font-medium">{p.name}</span>
+                    <span className="block text-sm text-[#1A1A1A] font-medium">{p.name}</span>
                     {(p as any).city && (
-                      <span className="block text-xs mt-0.5" style={{ color: 'rgba(242,242,242,0.4)' }}>
+                      <span className="block text-xs mt-0.5" style={{ color: 'rgba(26,26,26,0.4)' }}>
                         {(p as any).city}
                       </span>
                     )}
@@ -189,7 +189,7 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
           </div>
         ) : (
           activeProperty && (
-            <span className="text-sm hidden md:block max-w-[160px] truncate" style={{ color: 'rgba(242,242,242,0.4)' }}>
+            <span className="text-sm hidden md:block max-w-[160px] truncate" style={{ color: 'rgba(26,26,26,0.4)' }}>
               {activeProperty.name}
             </span>
           )
@@ -207,21 +207,21 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
                 href={link.href}
                 className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300"
                 style={{
-                  color: active ? '#B9B5DC' : 'rgba(242,242,242,0.45)',
+                  color: active ? '#B9B5DC' : 'rgba(26,26,26,0.45)',
                   backgroundColor: active ? 'rgba(131, 59, 14,0.15)' : 'transparent',
                 }}
                 onMouseEnter={e => {
-                  if (!active) (e.currentTarget as HTMLElement).style.color = '#B9B5DC'
+                  if (!active) (e.currentTarget as HTMLElement).style.color = '#833B0E'
                 }}
                 onMouseLeave={e => {
-                  if (!active) (e.currentTarget as HTMLElement).style.color = 'rgba(242,242,242,0.45)'
+                  if (!active) (e.currentTarget as HTMLElement).style.color = 'rgba(26,26,26,0.45)'
                 }}
               >
                 {link.label}
                 {link.ai && !active && (
                   <span
                     className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full font-medium"
-                    style={{ backgroundColor: 'rgba(131, 59, 14,0.25)', color: '#B9B5DC' }}
+                    style={{ backgroundColor: 'rgba(131, 59, 14,0.25)', color: '#833B0E' }}
                   >
                     AI
                   </span>
@@ -234,7 +234,7 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
             href={analyticsLink.href}
             className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300"
             style={{
-              color: isActive(analyticsLink.href) ? '#B9B5DC' : 'rgba(242,242,242,0.45)',
+              color: isActive(analyticsLink.href) ? '#B9B5DC' : 'rgba(26,26,26,0.45)',
               backgroundColor: isActive(analyticsLink.href) ? 'rgba(131, 59, 14,0.15)' : 'transparent',
             }}
           >
@@ -249,16 +249,16 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
         <button
           className="w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer"
           style={{
-            color: 'rgba(242,242,242,0.4)',
-            border: '1px solid rgba(242,242,242,0.08)',
+            color: 'rgba(26,26,26,0.4)',
+            border: '1px solid rgba(26,26,26,0.08)',
           }}
           onMouseEnter={e => {
-            (e.currentTarget as HTMLElement).style.color = '#F2F2F2'
+            (e.currentTarget as HTMLElement).style.color = '#1A1A1A'
             ;(e.currentTarget as HTMLElement).style.borderColor = 'rgba(131, 59, 14,0.4)'
           }}
           onMouseLeave={e => {
-            (e.currentTarget as HTMLElement).style.color = 'rgba(242,242,242,0.4)'
-            ;(e.currentTarget as HTMLElement).style.borderColor = 'rgba(242,242,242,0.08)'
+            (e.currentTarget as HTMLElement).style.color = 'rgba(26,26,26,0.4)'
+            ;(e.currentTarget as HTMLElement).style.borderColor = 'rgba(26,26,26,0.08)'
           }}
           aria-label="Notificaciones"
         >
@@ -273,7 +273,7 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
             style={{
               background: 'rgba(131, 59, 14,0.25)',
               border: '2px solid #833B0E',
-              color: '#B9B5DC',
+              color: '#833B0E',
               boxShadow: showUserMenu ? '0 0 0 3px rgba(131, 59, 14,0.2)' : 'none',
             }}
           >
@@ -284,28 +284,28 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
             <div
               className="absolute top-full right-0 mt-2 rounded-xl overflow-hidden z-50 min-w-52"
               style={{
-                backgroundColor: '#1E1E1C',
-                border: '1px solid rgba(242,242,242,0.08)',
-                boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
+                backgroundColor: '#FFFFFF',
+                border: '1px solid rgba(26,26,26,0.08)',
+                boxShadow: '0 16px 48px rgba(0,0,0,0.12)',
               }}
             >
               <div
                 className="px-4 py-3.5"
-                style={{ borderBottom: '1px solid rgba(242,242,242,0.06)' }}
+                style={{ borderBottom: '1px solid rgba(26,26,26,0.06)' }}
               >
-                <p className="text-sm font-medium text-[#F2F2F2]">{owner.name}</p>
-                <p className="text-xs mt-0.5" style={{ color: 'rgba(242,242,242,0.4)' }}>{owner.email}</p>
+                <p className="text-sm font-medium text-[#1A1A1A]">{owner.name}</p>
+                <p className="text-xs mt-0.5" style={{ color: 'rgba(26,26,26,0.4)' }}>{owner.email}</p>
               </div>
               <button
                 onClick={handleSignOut}
                 className="w-full text-left px-4 py-3 text-sm transition-colors duration-150 cursor-pointer"
-                style={{ color: 'rgba(242,242,242,0.45)' }}
+                style={{ color: 'rgba(26,26,26,0.45)' }}
                 onMouseEnter={e => {
                   (e.currentTarget as HTMLElement).style.color = '#F20022'
                   ;(e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(242,0,34,0.05)'
                 }}
                 onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.color = 'rgba(242,242,242,0.45)'
+                  (e.currentTarget as HTMLElement).style.color = 'rgba(26,26,26,0.45)'
                   ;(e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'
                 }}
               >

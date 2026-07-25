@@ -22,14 +22,14 @@ function ScoreBar({ label, value }: { label: string; value: number | null }) {
   if (!value) return null
   return (
     <div className="flex items-center gap-3 text-xs">
-      <span className="w-28 shrink-0" style={{ color: 'rgba(242,242,242,0.45)' }}>{label}</span>
-      <div className="flex-1 h-1.5 rounded-full" style={{ backgroundColor: 'rgba(242,242,242,0.06)' }}>
+      <span className="w-28 shrink-0" style={{ color: 'rgba(26,26,26,0.45)' }}>{label}</span>
+      <div className="flex-1 h-1.5 rounded-full" style={{ backgroundColor: 'rgba(26,26,26,0.06)' }}>
         <div
           className="h-1.5 rounded-full"
           style={{ width: `${(value / 5) * 100}%`, backgroundColor: '#D6A700' }}
         />
       </div>
-      <span className="font-medium w-8 text-right text-[#F2F2F2]">{value.toFixed(1)}</span>
+      <span className="font-medium w-8 text-right text-[#1A1A1A]">{value.toFixed(1)}</span>
     </div>
   )
 }
@@ -57,14 +57,14 @@ export default async function ReviewsPage({ params }: Props) {
     <div className="px-8 lg:px-16 py-10 max-w-4xl">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="font-serif text-4xl font-light text-[#F2F2F2]">Reseñas</h1>
-          <p className="text-sm mt-1" style={{ color: 'rgba(242,242,242,0.4)' }}>{property.name}</p>
+          <h1 className="font-serif text-4xl font-light text-[#1A1A1A]">Reseñas</h1>
+          <p className="text-sm mt-1" style={{ color: 'rgba(26,26,26,0.4)' }}>{property.name}</p>
         </div>
         <Link
           href={`/dashboard/${propertyId}/chat`}
           className="text-sm px-4 py-2 rounded-xl transition-all duration-200"
           style={{
-            color: '#B9B5DC',
+            color: '#833B0E',
             border: '1px solid rgba(131, 59, 14,0.3)',
             backgroundColor: 'rgba(131, 59, 14,0.08)',
           }}
@@ -77,9 +77,9 @@ export default async function ReviewsPage({ params }: Props) {
       {avgOverall && (
         <div className="rounded-2xl p-6 mb-6 nok-card flex items-center gap-8">
           <div className="text-center">
-            <p className="font-serif text-6xl font-light text-[#F2F2F2]">{avgOverall.toFixed(2)}</p>
+            <p className="font-serif text-6xl font-light text-[#1A1A1A]">{avgOverall.toFixed(2)}</p>
             <Stars score={avgOverall} />
-            <p className="text-xs mt-2" style={{ color: 'rgba(242,242,242,0.3)' }}>{allReviews.length} reseñas</p>
+            <p className="text-xs mt-2" style={{ color: 'rgba(26,26,26,0.3)' }}>{allReviews.length} reseñas</p>
           </div>
           <div className="flex-1 space-y-2.5">
             <ScoreBar label="Limpieza" value={avgScore(allReviews, 'cleanliness_score')} />
@@ -105,10 +105,10 @@ export default async function ReviewsPage({ params }: Props) {
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
             </svg>
           </div>
-          <p className="text-sm mb-2" style={{ color: 'rgba(242,242,242,0.4)' }}>
+          <p className="text-sm mb-2" style={{ color: 'rgba(26,26,26,0.4)' }}>
             No hay reseñas sincronizadas todavía.
           </p>
-          <p className="text-xs" style={{ color: 'rgba(242,242,242,0.25)' }}>
+          <p className="text-xs" style={{ color: 'rgba(26,26,26,0.25)' }}>
             Sincroniza desde el calendario para importar reseñas de Guesty.
           </p>
         </div>
@@ -118,8 +118,8 @@ export default async function ReviewsPage({ params }: Props) {
             <div key={review.id} className="rounded-2xl p-5 nok-card">
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <p className="font-medium text-[#F2F2F2] text-sm">{review.guest_name ?? 'Huésped'}</p>
-                  <p className="text-xs mt-0.5" style={{ color: 'rgba(242,242,242,0.35)' }}>
+                  <p className="font-medium text-[#1A1A1A] text-sm">{review.guest_name ?? 'Huésped'}</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'rgba(26,26,26,0.35)' }}>
                     {review.submitted_at
                       ? new Date(review.submitted_at).toLocaleDateString('es-DO', { month: 'long', day: 'numeric', year: 'numeric' })
                       : ''}
@@ -128,7 +128,7 @@ export default async function ReviewsPage({ params }: Props) {
                 </div>
                 <div className="flex items-center gap-2">
                   {review.overall_score && (
-                    <span className="text-sm font-semibold text-[#F2F2F2]">
+                    <span className="text-sm font-semibold text-[#1A1A1A]">
                       {(review.overall_score as number).toFixed(1)}
                     </span>
                   )}
@@ -137,7 +137,7 @@ export default async function ReviewsPage({ params }: Props) {
               </div>
 
               {review.reviewer_text && (
-                <p className="text-sm leading-relaxed" style={{ color: 'rgba(242,242,242,0.7)' }}>
+                <p className="text-sm leading-relaxed" style={{ color: 'rgba(26,26,26,0.7)' }}>
                   {review.reviewer_text as string}
                 </p>
               )}
@@ -147,8 +147,8 @@ export default async function ReviewsPage({ params }: Props) {
                   className="mt-4 pl-4 py-2"
                   style={{ borderLeft: '2px solid rgba(131, 59, 14,0.4)' }}
                 >
-                  <p className="text-xs mb-1" style={{ color: '#B9B5DC' }}>Respuesta de NOK</p>
-                  <p className="text-xs" style={{ color: 'rgba(242,242,242,0.55)' }}>
+                  <p className="text-xs mb-1" style={{ color: '#833B0E' }}>Respuesta de NOK</p>
+                  <p className="text-xs" style={{ color: 'rgba(26,26,26,0.55)' }}>
                     {review.host_response as string}
                   </p>
                 </div>

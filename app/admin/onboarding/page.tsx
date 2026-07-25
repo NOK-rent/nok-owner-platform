@@ -34,7 +34,7 @@ export default async function AdminOnboardingPage() {
     <div className="p-8 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-[#1D1D1B]">Cotizaciones express</h1>
+          <h1 className="text-2xl font-bold text-[#1A1A1A]">Cotizaciones express</h1>
           <p className="text-sm text-gray-500 mt-1">{sessions?.length ?? 0} sesiones registradas</p>
         </div>
         <Link
@@ -67,11 +67,11 @@ export default async function AdminOnboardingPage() {
               {sessions.map((s, i) => (
                 <tr key={s.id} className={`border-b border-[#EFEFEF] hover:bg-[#F7F7F7] transition-colors ${i === sessions.length - 1 ? 'border-b-0' : ''}`}>
                   <td className="px-5 py-4">
-                    <p className="font-medium text-[#1D1D1B]">{s.owner_name}</p>
+                    <p className="font-medium text-[#1A1A1A]">{s.owner_name}</p>
                     <p className="text-xs text-gray-400">{s.owner_email}</p>
                   </td>
                   <td className="px-5 py-4">
-                    <p className="text-[#1D1D1B]">{s.property_address}</p>
+                    <p className="text-[#1A1A1A]">{s.property_address}</p>
                     <p className="text-xs text-gray-400">{s.property_city} · {s.bedrooms ? `${s.bedrooms}h` : ''}{s.bathrooms ? ` ${s.bathrooms}b` : ''}</p>
                   </td>
                   <td className="px-5 py-4">

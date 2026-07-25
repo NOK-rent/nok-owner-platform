@@ -46,7 +46,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   } catch { groups = [] }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#1D1D1B' }}>
+    <div className="min-h-screen" style={{ backgroundColor: '#F0EFED' }}>
       <TopNav owner={owner} properties={properties} groups={groups} />
       <main className="pt-16 min-w-0">
         {children}

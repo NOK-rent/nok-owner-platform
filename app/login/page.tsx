@@ -32,7 +32,7 @@ export default function LoginPage() {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4"
-      style={{ backgroundColor: '#1D1D1B' }}
+      style={{ backgroundColor: '#F0EFED' }}
     >
       {/* Subtle purple glow backdrop */}
       <div
@@ -46,11 +46,11 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="flex flex-col items-center mb-10">
           <p
-            className="font-serif text-5xl font-light tracking-[0.3em] text-[#F2F2F2] mb-3"
+            className="font-serif text-5xl font-light tracking-[0.3em] text-[#1A1A1A] mb-3"
           >
             NOK
           </p>
-          <p style={{ color: 'rgba(242,242,242,0.35)', letterSpacing: '0.15em' }} className="text-xs uppercase">
+          <p style={{ color: 'rgba(26,26,26,0.35)', letterSpacing: '0.15em' }} className="text-xs uppercase">
             NOK Owners &nbsp;·&nbsp; Feels right. Anywhere.
           </p>
         </div>
@@ -59,15 +59,15 @@ export default function LoginPage() {
         <div
           className="rounded-2xl p-8"
           style={{
-            backgroundColor: '#141413',
-            border: '1px solid rgba(242,242,242,0.07)',
-            boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
+            backgroundColor: '#FFFFFF',
+            border: '1px solid rgba(26,26,26,0.07)',
+            boxShadow: '0 24px 64px rgba(0,0,0,0.12)',
           }}
         >
-          <h1 className="font-serif text-3xl font-light text-[#F2F2F2] mb-1">
+          <h1 className="font-serif text-3xl font-light text-[#1A1A1A] mb-1">
             Your property. Always in view.
           </h1>
-          <p className="text-sm mb-8" style={{ color: 'rgba(242,242,242,0.4)' }}>
+          <p className="text-sm mb-8" style={{ color: 'rgba(26,26,26,0.4)' }}>
             Performance, reservations and financials — everything in one place.
           </p>
 
@@ -75,7 +75,7 @@ export default function LoginPage() {
             <div>
               <label
                 className="block text-xs font-medium mb-2 uppercase tracking-widest"
-                style={{ color: 'rgba(242,242,242,0.45)' }}
+                style={{ color: 'rgba(26,26,26,0.45)' }}
               >
                 Correo electrónico
               </label>
@@ -86,10 +86,10 @@ export default function LoginPage() {
                 required
                 autoComplete="email"
                 placeholder="tu@correo.com"
-                className="w-full px-4 py-3 rounded-xl text-sm text-[#F2F2F2] placeholder-[rgba(242,242,242,0.2)] outline-none transition-all duration-300 focus:ring-2"
+                className="w-full px-4 py-3 rounded-xl text-sm text-[#1A1A1A] placeholder-[rgba(26,26,26,0.2)] outline-none transition-all duration-300 focus:ring-2"
                 style={{
-                  backgroundColor: '#1E1E1C',
-                  border: '1px solid rgba(242,242,242,0.08)',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid rgba(26,26,26,0.08)',
                   '--tw-ring-color': 'rgba(131, 59, 14,0.5)',
                 } as React.CSSProperties}
               />
@@ -98,7 +98,7 @@ export default function LoginPage() {
             <div>
               <label
                 className="block text-xs font-medium mb-2 uppercase tracking-widest"
-                style={{ color: 'rgba(242,242,242,0.45)' }}
+                style={{ color: 'rgba(26,26,26,0.45)' }}
               >
                 Contraseña
               </label>
@@ -109,10 +109,10 @@ export default function LoginPage() {
                 required
                 autoComplete="current-password"
                 placeholder="••••••••"
-                className="w-full px-4 py-3 rounded-xl text-sm text-[#F2F2F2] placeholder-[rgba(242,242,242,0.2)] outline-none transition-all duration-300 focus:ring-2"
+                className="w-full px-4 py-3 rounded-xl text-sm text-[#1A1A1A] placeholder-[rgba(26,26,26,0.2)] outline-none transition-all duration-300 focus:ring-2"
                 style={{
-                  backgroundColor: '#1E1E1C',
-                  border: '1px solid rgba(242,242,242,0.08)',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid rgba(26,26,26,0.08)',
                   '--tw-ring-color': 'rgba(131, 59, 14,0.5)',
                 } as React.CSSProperties}
               />
@@ -121,7 +121,7 @@ export default function LoginPage() {
             {error && (
               <div
                 className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm"
-                style={{ backgroundColor: 'rgba(242,0,34,0.08)', border: '1px solid rgba(242,0,34,0.2)', color: '#ff6b7a' }}
+                style={{ backgroundColor: 'rgba(242,0,34,0.08)', border: '1px solid rgba(242,0,34,0.2)', color: '#F20022' }}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
                   <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
@@ -138,7 +138,7 @@ export default function LoginPage() {
                 backgroundColor: '#833B0E',
                 boxShadow: loading ? 'none' : '0 4px 20px rgba(131, 59, 14,0.35)',
               }}
-              onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLElement).style.backgroundColor = '#a04d1c' }}
+              onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLElement).style.backgroundColor = '#6B3009' }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = '#833B0E' }}
             >
               {loading ? (
@@ -154,14 +154,14 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p className="text-center text-xs mt-6" style={{ color: 'rgba(242,242,242,0.25)' }}>
+        <p className="text-center text-xs mt-6" style={{ color: 'rgba(26,26,26,0.25)' }}>
           ¿Problemas para acceder?{' '}
-          <a href="mailto:hola@nok.do" className="text-[#B9B5DC] hover:text-[#F2F2F2] transition-colors">
+          <a href="mailto:hola@nok.do" className="text-[#833B0E] hover:text-[#1A1A1A] transition-colors">
             Escríbenos
           </a>
         </p>
 
-        <p className="text-center text-xs mt-2" style={{ color: 'rgba(242,242,242,0.15)', letterSpacing: '0.1em' }}>
+        <p className="text-center text-xs mt-2" style={{ color: 'rgba(26,26,26,0.15)', letterSpacing: '0.1em' }}>
           Curated stays designed to flow with you
         </p>
       </div>

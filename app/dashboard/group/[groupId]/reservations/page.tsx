@@ -29,33 +29,33 @@ export default async function GroupReservations({ params }: Props) {
 
   return (
     <div className="px-8 lg:px-16 py-10 max-w-4xl">
-      <h1 className="font-serif text-4xl text-[#F2F2F2] mb-1">Reservas — Grupo: {group.name}</h1>
-      <p className="text-sm text-[#F2F2F2]/50 mb-8">{properties.length} propiedades</p>
+      <h1 className="font-serif text-4xl text-[#1A1A1A] mb-1">Reservas — Grupo: {group.name}</h1>
+      <p className="text-sm text-[#1A1A1A]/50 mb-8">{properties.length} propiedades</p>
 
       <section className="mb-8">
-        <h2 className="text-sm font-semibold text-[#F2F2F2]/50 uppercase tracking-wide mb-3">Próximas reservas</h2>
+        <h2 className="text-sm font-semibold text-[#1A1A1A]/50 uppercase tracking-wide mb-3">Próximas reservas</h2>
         {(upcomingRes.data?.length ?? 0) === 0 ? (
-          <p className="text-sm text-[#F2F2F2]/30">No hay reservas próximas.</p>
+          <p className="text-sm text-[#1A1A1A]/30">No hay reservas próximas.</p>
         ) : (
           <div className="space-y-2">
             {upcomingRes.data!.map((r: any) => {
               const st = STATUS_LABELS[r.status] ?? { label: r.status, color: 'bg-gray-100 text-gray-600' }
               return (
-                <div key={r.id} className="rounded-xl px-5 py-4 flex items-center gap-4" style={{ backgroundColor: '#141413', border: '1px solid rgba(242,242,242,0.08)' }}>
+                <div key={r.id} className="rounded-xl px-5 py-4 flex items-center gap-4" style={{ backgroundColor: '#FFFFFF', border: '1px solid rgba(26,26,26,0.08)' }}>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[#F2F2F2] font-medium text-sm">{r.guest_name ?? 'Huésped'}</p>
-                    <p className="text-xs text-[#F2F2F2]/40 mt-0.5">
+                    <p className="text-[#1A1A1A] font-medium text-sm">{r.guest_name ?? 'Huésped'}</p>
+                    <p className="text-xs text-[#1A1A1A]/40 mt-0.5">
                       {propMap[r.property_id]?.name ?? '—'} · {fmt(r.check_in)} → {fmt(r.check_out)}
                       {r.nights ? ` · ${r.nights} noches` : ''}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    {r.channel && <span className="text-xs bg-[#F2F2F2]/5 text-[#F2F2F2]/60 px-2 py-0.5 rounded-full">{r.channel}</span>}
+                    {r.channel && <span className="text-xs bg-[#1A1A1A]/5 text-[#1A1A1A]/60 px-2 py-0.5 rounded-full">{r.channel}</span>}
                     <span className={`text-xs px-2 py-0.5 rounded-full ${st.color}`}>{st.label}</span>
                   </div>
                   {r.owner_revenue != null && (
                     <div className="text-right shrink-0">
-                      <p className="text-sm text-[#F2F2F2] font-semibold">
+                      <p className="text-sm text-[#1A1A1A] font-semibold">
                         {new Intl.NumberFormat('en-US', { style: 'currency', currency: r.currency ?? 'USD', maximumFractionDigits: 0 }).format(r.owner_revenue)}
                       </p>
                     </div>
@@ -69,19 +69,19 @@ export default async function GroupReservations({ params }: Props) {
 
       {(pastRes.data?.length ?? 0) > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-[#F2F2F2]/50 uppercase tracking-wide mb-3">Reservas recientes</h2>
+          <h2 className="text-sm font-semibold text-[#1A1A1A]/50 uppercase tracking-wide mb-3">Reservas recientes</h2>
           <div className="space-y-2">
             {pastRes.data!.map((r: any) => (
-              <div key={r.id} className="rounded-xl px-5 py-4 flex items-center gap-4 opacity-70" style={{ backgroundColor: '#141413', border: '1px solid rgba(242,242,242,0.08)' }}>
+              <div key={r.id} className="rounded-xl px-5 py-4 flex items-center gap-4 opacity-70" style={{ backgroundColor: '#FFFFFF', border: '1px solid rgba(26,26,26,0.08)' }}>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[#F2F2F2] text-sm">{r.guest_name ?? 'Huésped'}</p>
-                  <p className="text-xs text-[#F2F2F2]/40 mt-0.5">
+                  <p className="text-[#1A1A1A] text-sm">{r.guest_name ?? 'Huésped'}</p>
+                  <p className="text-xs text-[#1A1A1A]/40 mt-0.5">
                     {propMap[r.property_id]?.name ?? '—'} · {fmt(r.check_in)} → {fmt(r.check_out)}
                     {r.channel ? ` · ${r.channel}` : ''}
                   </p>
                 </div>
                 {r.owner_revenue != null && (
-                  <p className="text-sm text-[#F2F2F2]/80">
+                  <p className="text-sm text-[#1A1A1A]/80">
                     {new Intl.NumberFormat('en-US', { style: 'currency', currency: r.currency ?? 'USD', maximumFractionDigits: 0 }).format(r.owner_revenue)}
                   </p>
                 )}

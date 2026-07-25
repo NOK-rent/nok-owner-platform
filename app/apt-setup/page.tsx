@@ -28,10 +28,10 @@ export default function AptSetupEntry() {
   }
 
   const inputClass = (field: string) =>
-    `w-full bg-[#141413] border ${errors[field] ? 'border-[#F20022]' : 'border-[rgba(242,242,242,0.1)]'} rounded-xl px-4 py-3.5 text-sm text-[#F2F2F2] placeholder:text-[rgba(242,242,242,0.25)] focus:outline-none focus:ring-2 focus:ring-[#D6A700]/50 focus:border-[#D6A700] transition-all`
+    `w-full bg-[#FFFFFF] border ${errors[field] ? 'border-[#F20022]' : 'border-[rgba(26,26,26,0.1)]'} rounded-xl px-4 py-3.5 text-sm text-[#1A1A1A] placeholder:text-[rgba(26,26,26,0.25)] focus:outline-none focus:ring-2 focus:ring-[#D6A700]/50 focus:border-[#D6A700] transition-all`
 
   const selectClass =
-    'w-full bg-[#141413] border border-[rgba(242,242,242,0.1)] rounded-xl px-4 py-3.5 text-sm text-[#F2F2F2] focus:outline-none focus:ring-2 focus:ring-[#D6A700]/50 focus:border-[#D6A700] transition-all appearance-none'
+    'w-full bg-[#FFFFFF] border border-[rgba(26,26,26,0.1)] rounded-xl px-4 py-3.5 text-sm text-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-[#D6A700]/50 focus:border-[#D6A700] transition-all appearance-none'
 
   return (
     <div className="max-w-xl mx-auto">
@@ -40,10 +40,10 @@ export default function AptSetupEntry() {
         <p className="text-[#D6A700] text-xs font-semibold tracking-[0.2em] uppercase mb-3">
           Apt Setup
         </p>
-        <h1 className="font-[family-name:var(--font-cormorant)] text-4xl sm:text-5xl font-light text-[#F2F2F2] mb-3 leading-tight">
+        <h1 className="font-[family-name:var(--font-secondary)] text-4xl sm:text-5xl font-light text-[#1A1A1A] mb-3 leading-tight">
           Prepara tu apartamento
         </h1>
-        <p className="text-[rgba(242,242,242,0.45)] text-base">
+        <p className="text-[rgba(26,26,26,0.45)] text-base">
           Verificamos tu inventario contra los est&aacute;ndares NOK, analizamos fotos y generamos tu cotizaci&oacute;n en minutos.
         </p>
       </div>
@@ -51,11 +51,11 @@ export default function AptSetupEntry() {
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Personal info */}
         <div className="space-y-4">
-          <h2 className="text-xs font-semibold text-[rgba(242,242,242,0.4)] uppercase tracking-[0.15em]">
+          <h2 className="text-xs font-semibold text-[rgba(26,26,26,0.4)] uppercase tracking-[0.15em]">
             Propietario
           </h2>
           <div>
-            <label className="block text-sm font-medium text-[rgba(242,242,242,0.7)] mb-1.5">
+            <label className="block text-sm font-medium text-[rgba(26,26,26,0.7)] mb-1.5">
               Nombre completo
             </label>
             <input
@@ -69,7 +69,7 @@ export default function AptSetupEntry() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[rgba(242,242,242,0.7)] mb-1.5">Email</label>
+              <label className="block text-sm font-medium text-[rgba(26,26,26,0.7)] mb-1.5">Email</label>
               <input
                 type="email"
                 required
@@ -80,7 +80,7 @@ export default function AptSetupEntry() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[rgba(242,242,242,0.7)] mb-1.5">WhatsApp</label>
+              <label className="block text-sm font-medium text-[rgba(26,26,26,0.7)] mb-1.5">WhatsApp</label>
               <input
                 type="tel"
                 value={state.owner_phone}
@@ -94,11 +94,11 @@ export default function AptSetupEntry() {
 
         {/* Property info */}
         <div className="space-y-4">
-          <h2 className="text-xs font-semibold text-[rgba(242,242,242,0.4)] uppercase tracking-[0.15em]">
+          <h2 className="text-xs font-semibold text-[rgba(26,26,26,0.4)] uppercase tracking-[0.15em]">
             Apartamento
           </h2>
           <div>
-            <label className="block text-sm font-medium text-[rgba(242,242,242,0.7)] mb-1.5">Direcci&oacute;n</label>
+            <label className="block text-sm font-medium text-[rgba(26,26,26,0.7)] mb-1.5">Direcci&oacute;n</label>
             <input
               type="text"
               required
@@ -110,7 +110,7 @@ export default function AptSetupEntry() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[rgba(242,242,242,0.7)] mb-1.5">Pa&iacute;s</label>
+              <label className="block text-sm font-medium text-[rgba(26,26,26,0.7)] mb-1.5">Pa&iacute;s</label>
               <select
                 value={state.country}
                 onChange={e => updateState({ country: e.target.value as 'CO' | 'DO', property_city: e.target.value === 'CO' ? 'Bogotá' : 'Santo Domingo' })}
@@ -121,7 +121,7 @@ export default function AptSetupEntry() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-[rgba(242,242,242,0.7)] mb-1.5">Ciudad</label>
+              <label className="block text-sm font-medium text-[rgba(26,26,26,0.7)] mb-1.5">Ciudad</label>
               <select
                 value={state.property_city}
                 onChange={e => updateState({ property_city: e.target.value })}
@@ -133,7 +133,7 @@ export default function AptSetupEntry() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[rgba(242,242,242,0.7)] mb-1.5">Habitaciones</label>
+              <label className="block text-sm font-medium text-[rgba(26,26,26,0.7)] mb-1.5">Habitaciones</label>
               <select
                 value={state.bedrooms}
                 onChange={e => updateState({ bedrooms: Number(e.target.value) })}
@@ -143,7 +143,7 @@ export default function AptSetupEntry() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-[rgba(242,242,242,0.7)] mb-1.5">Ba&ntilde;os</label>
+              <label className="block text-sm font-medium text-[rgba(26,26,26,0.7)] mb-1.5">Ba&ntilde;os</label>
               <select
                 value={state.bathrooms}
                 onChange={e => updateState({ bathrooms: Number(e.target.value) })}
@@ -157,12 +157,12 @@ export default function AptSetupEntry() {
 
         <button
           type="submit"
-          className="w-full bg-[#D6A700] hover:bg-[#C49800] text-[#1D1D1B] py-4 rounded-xl font-semibold text-sm transition-all duration-200 active:scale-[0.98]"
+          className="w-full bg-[#D6A700] hover:bg-[#C49800] text-[#F0EFED] py-4 rounded-xl font-semibold text-sm transition-all duration-200 active:scale-[0.98]"
         >
           Iniciar verificaci&oacute;n
         </button>
 
-        <p className="text-xs text-center text-[rgba(242,242,242,0.2)]">
+        <p className="text-xs text-center text-[rgba(26,26,26,0.2)]">
           Sin compromiso &middot; Cotizaci&oacute;n gratuita &middot; Informaci&oacute;n confidencial
         </p>
       </form>
