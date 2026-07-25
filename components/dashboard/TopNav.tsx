@@ -58,6 +58,7 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
 
   const [showPropMenu, setShowPropMenu] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [locale, setLocale] = useState<Locale>('es')
   useEffect(() => { setLocale(readLocaleCookie()) }, [])
   const L = NAV_LABELS[locale]
@@ -279,8 +280,20 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
         </div>
       </div>
 
-      {/* ── Right: idioma + bell + avatar ── */}
-      <div className="flex items-center gap-3 shrink-0">
+      {/* ── Right: idioma + bell + avatar + hamburguesa (móvil) ── */}
+      <div className="flex items-center gap-3 shrink-0 ml-auto">
+        {/* Hamburguesa — solo móvil */}
+        <button
+          onClick={() => setShowMobileMenu(v => !v)}
+          className="md:hidden w-9 h-9 flex items-center justify-center rounded-lg"
+          style={{ color: '#1A1A1A', border: '1px solid rgba(26,26,26,0.1)' }}
+          aria-label="Menú"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+            {showMobileMenu ? <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></> : <><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></>}
+          </svg>
+        </button>
+
         {/* Selector de idioma */}
         <div className="hidden sm:flex items-center rounded-full overflow-hidden" style={{ border: '1px solid rgba(26,26,26,0.1)' }}>
           {(['es', 'en'] as Locale[]).map(l => (
@@ -368,6 +381,53 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
           )}
         </div>
       </div>
+
+      {/* ── Menú móvil desplegable ── */}
+      {showMobileMenu && (
+        <>
+          <div className="md:hidden fixed inset-0 top-16 z-40" style={{ backgroundColor: 'rgba(0,0,0,0.2)' }} onClick={() => setShowMobileMenu(false)} />
+          <div
+            className="md:hidden absolute top-16 left-0 right-0 z-50 py-2"
+            style={{ backgroundColor: '#FFFFFF', borderBottom: '1px solid rgba(26,26,26,0.08)', boxShadow: '0 16px 40px rgba(0,0,0,0.12)', maxHeight: 'calc(100vh - 4rem)', overflowY: 'auto' }}
+          >
+            {[...navLinks, analyticsLink, equipoLink].map(link => {
+              const active = isActive(link.href)
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setShowMobileMenu(false)}
+                  className="flex items-center gap-2 px-6 py-3.5 text-[15px] font-medium"
+                  style={{
+                    color: active ? '#833B0E' : '#1A1A1A',
+                    backgroundColor: active ? 'rgba(131,59,14,0.08)' : 'transparent',
+                    borderLeft: `3px solid ${active ? '#833B0E' : 'transparent'}`,
+                  }}
+                >
+                  {link.label}
+                  {(link as { ai?: boolean }).ai && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ backgroundColor: 'rgba(131,59,14,0.25)', color: '#833B0E' }}>AI</span>
+                  )}
+                </Link>
+              )
+            })}
+            {/* Idioma + cerrar sesión */}
+            <div className="flex items-center justify-between px-6 py-3 mt-1" style={{ borderTop: '1px solid rgba(26,26,26,0.06)' }}>
+              <div className="flex items-center rounded-full overflow-hidden" style={{ border: '1px solid rgba(26,26,26,0.12)' }}>
+                {(['es', 'en'] as Locale[]).map(l => (
+                  <button key={l} onClick={() => switchLocale(l)} className="px-3 py-1 text-xs font-semibold uppercase"
+                    style={{ backgroundColor: locale === l ? 'rgba(131,59,14,0.15)' : 'transparent', color: locale === l ? '#833B0E' : 'rgba(26,26,26,0.4)' }}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+              <button onClick={handleSignOut} className="text-sm font-medium" style={{ color: '#F20022' }}>
+                {L.cerrarSesion}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </nav>
   )
 }
