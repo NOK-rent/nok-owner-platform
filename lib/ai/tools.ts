@@ -452,7 +452,7 @@ export const getRevenueStrategyTool = (property: { wheelhouse_property_id?: stri
         revenue_score_30d: s.revenueScore30,
         ratio_ocupacion_vs_zona_30d: s.occRatio30 != null ? Number(s.occRatio30.toFixed(1)) : null,
         alertas_motor: s.flags,
-        nota: 'Montos en USD. Datos en vivo del motor de Revenue Management NOK (cache máx 6h).',
+        nota: 'Montos en USD. Datos en vivo del motor de Revenue Management NOK (se refrescan cada hora).',
       }
     },
   })

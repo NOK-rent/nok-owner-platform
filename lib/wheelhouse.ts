@@ -9,7 +9,7 @@
 const BASE = process.env.WHEELHOUSE_BASE_URL || 'https://api.usewheelhouse.com/ss_api/v1'
 const KEY = process.env.WHEELHOUSE_API_KEY || ''
 
-const REVALIDATE_DATA = 6 * 60 * 60   // 6h — pricing/market data
+const REVALIDATE_DATA = 60 * 60       // 1h — pricing/market data
 const REVALIDATE_FX = 24 * 60 * 60    // 24h — FX rates
 
 async function whFetch<T = any>(path: string, revalidate = REVALIDATE_DATA): Promise<T | null> {

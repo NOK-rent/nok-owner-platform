@@ -604,8 +604,8 @@ export default async function RevenuePage({ params }: Props) {
             {/* Methodology note */}
             <p className="text-xs leading-relaxed" style={{ color: 'rgba(26,26,26,0.3)' }}>
               {EN
-                ? `Prices are recalculated and published automatically every day${snap.horizonDays ? ` with a ${snap.horizonDays}-day horizon` : ''}. Area data is refreshed several times a day by NOK Revenue Management. Area amounts may be converted from local currency to USD at the daily rate.`
-                : `Los precios se recalculan y publican automáticamente todos los días${snap.horizonDays ? ` con un horizonte de ${snap.horizonDays} días` : ''}. Datos de zona actualizados varias veces al día por Revenue Management NOK. Los montos de la zona pueden convertirse de moneda local a USD con la tasa del día.`}
+                ? `Prices are recalculated and published automatically every day${snap.horizonDays ? ` with a ${snap.horizonDays}-day horizon` : ''}. This view refreshes every hour, and rate changes are monitored hourly by NOK Revenue Management. Area amounts may be converted from local currency to USD at the daily rate.`
+                : `Los precios se recalculan y publican automáticamente todos los días${snap.horizonDays ? ` con un horizonte de ${snap.horizonDays} días` : ''}. Esta vista se refresca cada hora y los cambios de tarifa se monitorean cada hora por Revenue Management NOK. Los montos de la zona pueden convertirse de moneda local a USD con la tasa del día.`}
             </p>
           </>
         )}
