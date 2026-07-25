@@ -41,17 +41,32 @@ const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Ago
 const DAYS_ES   = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
 
 const CHANNEL_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  airbnb:        { bg: 'rgba(239,68,68,0.15)',   border: '#ef4444', text: '#F20022' },
-  'booking.com': { bg: 'rgba(59,130,246,0.15)',  border: '#0080C6', text: '#0080C6' },
-  direct:        { bg: 'rgba(14,104,69,0.2)',    border: '#0E6845', text: '#0E6845' },
-  vrbo:          { bg: 'rgba(139,92,246,0.15)',  border: '#4D439E', text: '#4D439E' },
+  airbnb:  { bg: 'rgba(239,68,68,0.10)',  border: '#ef4444', text: '#C81E3C' },
+  booking: { bg: 'rgba(0,128,198,0.10)',  border: '#0080C6', text: '#01679E' },
+  direct:  { bg: 'rgba(14,104,69,0.10)',  border: '#0E6845', text: '#0E6845' },
+  vrbo:    { bg: 'rgba(77,67,158,0.10)',  border: '#4D439E', text: '#4D439E' },
 }
 
-const DEFAULT_CHANNEL = { bg: 'rgba(131, 59, 14,0.15)', border: '#833B0E', text: '#833B0E' }
+const DEFAULT_CHANNEL = { bg: 'rgba(131, 59, 14,0.10)', border: '#833B0E', text: '#833B0E' }
 
+// Los canales de Guesty vienen con variantes ("airbnb2", "bookingCom", "manual", "owner"…)
 function getChannelStyle(channel: string | null) {
-  if (!channel) return DEFAULT_CHANNEL
-  return CHANNEL_COLORS[channel.toLowerCase()] ?? DEFAULT_CHANNEL
+  const c = (channel ?? '').toLowerCase()
+  if (!c) return DEFAULT_CHANNEL
+  if (c.includes('airbnb')) return CHANNEL_COLORS.airbnb
+  if (c.includes('booking')) return CHANNEL_COLORS.booking
+  if (c.includes('vrbo') || c.includes('homeaway')) return CHANNEL_COLORS.vrbo
+  if (c.includes('direct') || c === 'owner' || c === 'manual' || c.includes('website')) return CHANNEL_COLORS.direct
+  return DEFAULT_CHANNEL
+}
+
+function channelLabel(channel: string | null) {
+  const c = (channel ?? '').toLowerCase()
+  if (c.includes('airbnb')) return 'Airbnb'
+  if (c.includes('booking')) return 'Booking.com'
+  if (c.includes('vrbo') || c.includes('homeaway')) return 'Vrbo'
+  if (c.includes('direct') || c === 'owner' || c === 'manual' || c.includes('website')) return 'Directa'
+  return channel ? channel.charAt(0).toUpperCase() + channel.slice(1) : ''
 }
 
 function fmt(amount: number | null, currency = 'USD') {
@@ -232,10 +247,14 @@ export default function CalendarView({ propertyId, year, month, reservations, pr
                 {/* Reservation bar */}
                 {reservation && (
                   <div
-                    className="rounded px-1.5 py-1 mb-1 flex-1"
+                    className="rounded-md px-1.5 py-1 mb-1 flex-1"
                     style={{
-                      borderLeft: `2px solid ${channelStyle.border}`,
-                      backgroundColor: 'rgba(0,0,0,0.2)',
+                      borderLeft: `3px solid ${channelStyle.border}`,
+                      backgroundColor: '#FFFFFF',
+                      border: `1px solid ${channelStyle.border}33`,
+                      borderLeftWidth: '3px',
+                      borderLeftColor: channelStyle.border,
+                      boxShadow: '0 1px 2px rgba(26,26,26,0.05)',
                     }}
                   >
                     <p className="text-[10px] font-medium truncate leading-tight" style={{ color: channelStyle.text }}>
@@ -244,7 +263,7 @@ export default function CalendarView({ propertyId, year, month, reservations, pr
                     {isCheckIn && (
                       <>
                         <p className="text-[9px] leading-tight mt-0.5" style={{ color: 'rgba(26,26,26,0.4)' }}>
-                          {reservation.nights}n · {reservation.channel ? reservation.channel.charAt(0).toUpperCase() + reservation.channel.slice(1) : ''}
+                          {reservation.nights}n · {channelLabel(reservation.channel)}
                         </p>
                         {reservation.owner_revenue ? (
                           <p className="text-[9px] font-semibold leading-tight mt-0.5" style={{ color: '#0E6845' }}>
