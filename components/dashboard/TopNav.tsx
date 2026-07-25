@@ -47,7 +47,7 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
   const activeGroup = groups.find(g => g.id === activeGroupId)
   const match = pathname.match(/\/dashboard\/([^\/]+)/)
   const rawId = match?.[1]
-  const reserved = ['analytics', 'group']
+  const reserved = ['analytics', 'group', 'equipo']
   const activePropertyId = !activeGroupId
     ? (rawId && !reserved.includes(rawId) ? rawId : properties[0]?.id)
     : undefined
@@ -65,10 +65,12 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
     { label: 'Reservas',   href: `/dashboard/${activePropertyId}/reservations` },
     { label: 'Reseñas',    href: `/dashboard/${activePropertyId}/reviews` },
     { label: 'Revenue',    href: `/dashboard/${activePropertyId}/revenue` },
+    { label: 'Cálculos',   href: `/dashboard/${activePropertyId}/calculos` },
     { label: 'NOK AI',     href: `/dashboard/${activePropertyId}/chat`, ai: true },
   ] : []
-  // Always-visible analytics link
+  // Always-visible links
   const analyticsLink = { label: 'Analíticas', href: '/dashboard/analytics' }
+  const equipoLink = { label: 'Equipo NOK', href: '/dashboard/equipo' }
 
   function isActive(href: string) {
     return pathname === href || pathname.startsWith(href)
@@ -229,17 +231,20 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
               </Link>
             )
           })}
-          {/* Analytics — always visible */}
-          <Link
-            href={analyticsLink.href}
-            className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300"
-            style={{
-              color: isActive(analyticsLink.href) ? '#B9B5DC' : 'rgba(26,26,26,0.45)',
-              backgroundColor: isActive(analyticsLink.href) ? 'rgba(131, 59, 14,0.15)' : 'transparent',
-            }}
-          >
-            {analyticsLink.label}
-          </Link>
+          {/* Analytics + Equipo NOK — always visible */}
+          {[analyticsLink, equipoLink].map(link => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300"
+              style={{
+                color: isActive(link.href) ? '#B9B5DC' : 'rgba(26,26,26,0.45)',
+                backgroundColor: isActive(link.href) ? 'rgba(131, 59, 14,0.15)' : 'transparent',
+              }}
+            >
+              {link.label}
+            </Link>
+          ))}
         </div>
       </div>
 

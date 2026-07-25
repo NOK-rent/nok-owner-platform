@@ -1,5 +1,16 @@
 # COORDINATION.md — sesiones Claude activas en nok-owner-platform
 
+## Sesión: Features owner dashboard (2026-07-24)
+4 features: (1) tab Cálculos por propiedad (statement mensual + gastos propios del owner + PDF NOK) con card
+de links de publicación (airbnb_url/booking_url/etc.), (2) tab global /dashboard/equipo (hilos de tickets
+bidireccionales + comunicados), (3) /api/soporte con email Resend directo (reemplaza webhook n8n roto),
+(4) adjuntos en ticket_events.metadata via Storage bucket soporte-adjuntos.
+- Archivos nuevos: lib/monthly-statement.ts, lib/statement-pdf.tsx, app/dashboard/[propertyId]/calculos/*,
+  app/dashboard/equipo/*, app/api/soporte/tickets/*, lib/soporte-email.ts
+- Tocados: components/dashboard/TopNav.tsx (tabs Cálculos + Equipo NOK), app/api/soporte/route.ts (email directo)
+- NO toco overview/page.tsx ni NotificationsBanner.tsx (conflicto con sesiones previas)
+- También en nok-hub: broadcast modal en owners-portal + composer de respuesta en /soporte/tickets
+
 ## Sesión: Restyle nok.rent (2026-07-24)
 Redesign completo al sistema de diseño de nok.rent: Aeonik + Hedvig Letters Serif,
 tema claro (#F0EFED / cards blancas / texto #1A1A1A), acento Earth #833B0E.
