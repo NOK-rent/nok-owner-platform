@@ -258,6 +258,25 @@ export default async function OverviewPage({ params, searchParams }: Props) {
   // Operations facts del mes (mensajes respondidos, limpiezas, camas tendidas)
   const opsFacts = await getOperationsFacts(sb, property, selectedMonthKey, checkouts)
 
+  // ── Estado del apartamento en vivo (hora local del país) ──
+  const propTz = ((property.country || '').toLowerCase().includes('colombia')) ? 'America/Bogota' : 'America/Santo_Domingo'
+  const localNow = new Date(new Date().toLocaleString('en-US', { timeZone: propTz }))
+  const localToday = new Intl.DateTimeFormat('en-CA', { timeZone: propTz }).format(new Date())
+  const { data: hoyRes } = await sb
+    .from('reservations')
+    .select('check_in, check_out')
+    .eq('property_id', propertyId)
+    .in('status', ['confirmed', 'checked_in', 'checked_out'])
+    .lte('check_in', localToday)
+    .gte('check_out', localToday)
+  const ocupadoAhora = (hoyRes ?? []).some((r: any) => r.check_in <= localToday && r.check_out > localToday)
+  const checkoutHoy = (hoyRes ?? []).some((r: any) => r.check_out === localToday)
+  const estadoApto = ocupadoAhora
+    ? { label: 'Ocupado — huésped en casa', color: '#8A6D00', bg: 'rgba(214,167,0,0.14)' }
+    : (checkoutHoy && localNow.getHours() < 17)
+      ? { label: 'En proceso de limpieza', color: '#0080C6', bg: 'rgba(0,128,198,0.12)' }
+      : { label: 'Limpio ✓', color: '#0E6845', bg: 'rgba(14,104,69,0.12)' }
+
   const netRevenue = grossRevenue - commAmount - cleaningCostUSD - directBookingCommission - monthUtilitiesUSD - monthMaintenanceUSD - ownerCostsMonthUSD
 
   // YTD financial
@@ -715,6 +734,12 @@ export default async function OverviewPage({ params, searchParams }: Props) {
           <div className="rounded-2xl p-6 nok-card">
             <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-6">Estado operativo</h2>
             <div className="space-y-4">
+              <div className="flex items-center justify-between pb-4" style={{ borderBottom: '1px solid rgba(26,26,26,0.06)' }}>
+                <span className="text-sm" style={{ color: 'rgba(26,26,26,0.45)' }}>Estado del apartamento</span>
+                <span className="text-xs font-semibold px-3 py-1.5 rounded-full" style={{ backgroundColor: estadoApto.bg, color: estadoApto.color }}>
+                  {estadoApto.label}
+                </span>
+              </div>
               <OpRow
                 label="Última limpieza"
                 value={lastCleaning?.completed_at
