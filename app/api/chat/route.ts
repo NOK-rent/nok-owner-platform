@@ -14,7 +14,9 @@ import {
   getMaintenanceTool,
   getInventoryAlertsTool,
   getFullInventoryTool,
+  searchKnowledgeTool,
   createSupportTicketTool,
+  getRevenueStrategyTool,
 } from '@/lib/ai/tools'
 
 export const maxDuration = 60
@@ -96,7 +98,9 @@ export async function POST(req: Request) {
       getMaintenance: getMaintenanceTool(propertyId),
       getInventoryAlerts: getInventoryAlertsTool(propertyId),
       getFullInventory: getFullInventoryTool(propertyId),
+      searchKnowledge: searchKnowledgeTool(),
       createSupportTicket: createSupportTicketTool(propertyId, owner.id),
+      getRevenueStrategy: getRevenueStrategyTool(property),
     }
 
     // ── Convert UIMessages to CoreMessages ──────────────────────────

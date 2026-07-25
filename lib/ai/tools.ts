@@ -55,18 +55,47 @@ export const getPricingForPeriodTool = (propertyId: string) =>
         .order('calendar_date')
 
       const allDays = days ?? []
-      const available = allDays.every(d => d.is_available && !d.is_blocked)
       const withPrice = allDays.filter(d => d.base_rate && d.base_rate > 0)
-      const avgRate = withPrice.length
-        ? withPrice.reduce((s, d) => s + d.base_rate, 0) / withPrice.length
-        : 0
+
+      // El calendario de Guesty se cachea ~12 meses hacia adelante. Si no hay
+      // filas para estas fechas, NO significa que la tarifa sea 0 — significa
+      // que aún no hay tarifa publicada/sincronizada para ese período.
+      if (allDays.length === 0) {
+        return {
+          checkIn,
+          checkOut,
+          status: 'no_rates_published',
+          message:
+            'Todavía no hay tarifas publicadas en el calendario para esas fechas. ' +
+            'Suele pasar con fechas lejanas (temporada alta del próximo año) que el ' +
+            'equipo de Revenue aún no ha cargado en Guesty. No asumas que el precio es 0.',
+        }
+      }
+      if (withPrice.length === 0) {
+        return {
+          checkIn,
+          checkOut,
+          status: 'rates_pending',
+          totalNights: allDays.length,
+          message:
+            'Existe disponibilidad en el calendario pero aún sin tarifa cargada para ' +
+            'estas fechas. No asumas que el precio es 0; la tarifa está pendiente de publicar.',
+        }
+      }
+
+      const available = allDays.every(d => d.is_available && !d.is_blocked)
+      const avgRate = withPrice.reduce((s, d) => s + d.base_rate, 0) / withPrice.length
 
       return {
         checkIn,
         checkOut,
+        status: 'ok',
         totalNights: allDays.length,
+        nightsWithRate: withPrice.length,
         available,
         avgNightlyRate: Math.round(avgRate),
+        minNightlyRate: Math.min(...withPrice.map(d => d.base_rate)),
+        maxNightlyRate: Math.max(...withPrice.map(d => d.base_rate)),
         estimatedTotal: Math.round(avgRate * allDays.length),
         currency: allDays[0]?.currency ?? 'USD',
       }
@@ -306,6 +335,45 @@ export const getFullInventoryTool = (propertyId: string) =>
     },
   })
 
+// ─── KNOWLEDGE BASE ────────────────────────────────────────────────────────
+
+export const searchKnowledgeTool = () =>
+  tool({
+    description:
+      'Consulta la base de conocimiento de NOK sobre alquiler de corto plazo: temporada alta/baja, cómo se fijan las tarifas (pricing dinámico), ADR/ocupación/RevPAR, comisión NOK, costos y políticas. Úsala SIEMPRE que el propietario haga una pregunta general de mercado o de cómo funciona algo (no específica de un dato de su propiedad). Por ejemplo: "¿cuándo es temporada alta?", "¿por qué cambian los precios?", "¿qué es el ADR?".',
+    inputSchema: z.object({
+      topic: z
+        .string()
+        .optional()
+        .describe('Palabras clave del tema a buscar (ej. "temporada alta", "pricing", "comision"). Vacío = traer todo.'),
+    }),
+    execute: async ({ topic }) => {
+      const sb = createServiceClient()
+      let query = sb
+        .from('ai_knowledge')
+        .select('category, title, content, country')
+        .eq('is_active', true)
+
+      if (topic && topic.trim()) {
+        const t = topic.trim()
+        query = query.or(`title.ilike.%${t}%,content.ilike.%${t}%,tags.cs.{${t}}`)
+      }
+
+      const { data } = await query.limit(8)
+      const entries = data ?? []
+      if (!entries.length) {
+        // Fallback: sin match, devolver todo lo activo para que el modelo elija.
+        const { data: all } = await sb
+          .from('ai_knowledge')
+          .select('category, title, content, country')
+          .eq('is_active', true)
+          .limit(8)
+        return all ?? []
+      }
+      return entries
+    },
+  })
+
 // ─── SUPPORT TICKETS ───────────────────────────────────────────────────────
 
 export const createSupportTicketTool = (propertyId: string, ownerId: string) =>
@@ -326,5 +394,65 @@ export const createSupportTicketTool = (propertyId: string, ownerId: string) =>
 
       if (error) throw new Error(error.message)
       return { ticketId: data.id, status: data.status, message: 'Ticket creado. El equipo NOK te contactará pronto.' }
+    },
+  })
+
+// ─── REVENUE MANAGEMENT (Wheelhouse, en vivo) ──────────────────────────────
+
+export const getRevenueStrategyTool = (property: { wheelhouse_property_id?: string | null; guesty_listing_id?: string | null }) =>
+  tool({
+    description:
+      'Get the LIVE revenue management strategy and market comparison for this property: today\'s published rate, base price breakdown (why the price is what it is: market baseline, bedrooms, location, amenities...), occupancy vs the surrounding zone, upcoming rate calendar vs zone median, demand sensitivity settings, named seasons, revenue score and engine alerts. Use whenever the owner asks WHY their price is set a certain way, how their unit compares to the market/zone, what the pricing strategy is, about discounts, minimum stays, seasons, or anything about revenue management. Data comes from the NOK Revenue Management engine. Never mention the vendor name "Wheelhouse" — call it "Revenue Management NOK" / "el motor de revenue de NOK". Say "zona" (never "barrio") for the comparable-market area.',
+    inputSchema: z.object({}),
+    execute: async () => {
+      const { getRevenueSnapshot, resolveWheelhouseRef } = await import('@/lib/wheelhouse')
+      const ref = resolveWheelhouseRef(property)
+      if (!ref) return { status: 'not_configured', message: 'Esta propiedad aún no está conectada al motor de Revenue Management.' }
+      const s = await getRevenueSnapshot(ref.id, ref.channel)
+      if (!s) return { status: 'unavailable', message: 'Los datos de Revenue Management no están disponibles en este momento. No inventes valores.' }
+
+      // Condense the 60-day rate calendar into weekly buckets to keep context small
+      const weeks: { desde: string; nuestra_mediana: number | null; zona_mediana: number | null }[] = []
+      for (let i = 0; i < s.rateDays.length; i += 7) {
+        const chunk = s.rateDays.slice(i, i + 7)
+        const med = (vals: (number | null)[]) => {
+          const v = vals.filter((x): x is number => x != null).sort((a, b) => a - b)
+          return v.length ? Math.round(v[Math.floor(v.length / 2)]) : null
+        }
+        weeks.push({ desde: chunk[0].date, nuestra_mediana: med(chunk.map(d => d.ours)), zona_mediana: med(chunk.map(d => d.zoneMedian)) })
+      }
+
+      return {
+        plan: s.tierName,
+        horizonte_dias: s.horizonDays,
+        tarifa_publicada_hoy_usd: s.todayPrice,
+        posicion_vs_zona_pct: s.posVsZonePct,
+        comparables_en_zona: s.zoneListings,
+        noches_vendidas_ultimos_7d: s.pickup7,
+        ocupacion_vs_zona: s.occWindows.map(w => ({
+          ventana: w.label,
+          unidad: w.unit != null ? Math.round(w.unit * 100) + '%' : null,
+          zona: w.zone != null ? Math.round(w.zone * 100) + '%' : null,
+        })),
+        tarifas_por_semana_usd: weeks,
+        estrategia: s.strategy.map(x => `${x.tag}: ${x.text}`),
+        precio_base: s.basePrice
+          ? {
+              recomendado_usd: s.basePrice.recommended,
+              aplicado_usd: s.basePrice.selected,
+              rango_motor_usd: [s.basePrice.conservative, s.basePrice.aggressive],
+              confianza_modelo_pct: s.basePrice.anchorCredibility,
+              desglose: s.basePrice.attribution,
+            }
+          : null,
+        sensibilidad_demanda_pct: s.demandSensitivityPct,
+        pacing_ocupacion_activo: s.pacingAdjusted,
+        anclaje_historial_pct: s.historicalAnchoringPct,
+        proximas_temporadas: s.upcomingSeasons,
+        revenue_score_30d: s.revenueScore30,
+        ratio_ocupacion_vs_zona_30d: s.occRatio30 != null ? Number(s.occRatio30.toFixed(1)) : null,
+        alertas_motor: s.flags,
+        nota: 'Montos en USD. Datos en vivo del motor de Revenue Management NOK (cache máx 6h).',
+      }
     },
   })

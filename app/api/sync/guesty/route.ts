@@ -4,7 +4,7 @@
  * Pulls data from Guesty and upserts into Supabase:
  *   - Reservations (last 6 months + next 12 months)
  *   - Reviews (last 50)
- *   - Pricing calendar (next 6 months)
+ *   - Pricing calendar (next 12 months)
  *
  * Called manually from the Calendar page or via cron.
  */
@@ -60,7 +60,6 @@ export async function POST(req: Request) {
   const today = new Date()
   const sixMonthsAgo = new Date(today); sixMonthsAgo.setMonth(today.getMonth() - 6)
   const twelveMonthsOut = new Date(today); twelveMonthsOut.setMonth(today.getMonth() + 12)
-  const sixMonthsOut = new Date(today); sixMonthsOut.setMonth(today.getMonth() + 6)
 
   const fmt = (d: Date) => d.toISOString().split('T')[0]
 
@@ -139,7 +138,7 @@ export async function POST(req: Request) {
 
   // ── 3. Sync pricing calendar ─────────────────────────────────
   try {
-    const days = await getPricingCalendar(guestyListingId, fmt(today), fmt(sixMonthsOut))
+    const days = await getPricingCalendar(guestyListingId, fmt(today), fmt(twelveMonthsOut))
 
     for (const d of days) {
       // Wheelhouse recommended rate — use suggestedPrice if available, fallback to price
