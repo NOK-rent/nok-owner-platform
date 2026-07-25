@@ -30,6 +30,17 @@ export async function GET(req: Request) {
     .select('id, guesty_listing_id, wheelhouse_property_id')
     .not('owner_id', 'is', null)
 
+  // Stalest-first: properties without a snapshot, then oldest snapshot.
+  // A single run may not cover the whole portfolio within maxDuration, so
+  // this ordering guarantees full rotation across the twice-daily runs.
+  const { data: snaps } = await sb.from('rate_snapshots').select('property_id, taken_at')
+  const takenAt = new Map<string, string>((snaps ?? []).map((s: any) => [s.property_id, s.taken_at]))
+  ;(props ?? []).sort((a: any, b: any) => {
+    const ta = takenAt.get(a.id) ?? ''
+    const tb = takenAt.get(b.id) ?? ''
+    return ta.localeCompare(tb)
+  })
+
   const today = new Date().toISOString().slice(0, 10)
   const maxDate = new Date(Date.now() + HORIZON_DAYS * 86400000).toISOString().slice(0, 10)
 
