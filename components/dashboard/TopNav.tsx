@@ -14,6 +14,26 @@ interface TopNavProps {
   groups?: GroupLite[]
 }
 
+type Locale = 'es' | 'en'
+
+const NAV_LABELS: Record<Locale, Record<string, string>> = {
+  es: {
+    resumen: 'Resumen', calendario: 'Calendario', reservas: 'Reservas', resenas: 'Reseñas',
+    strategy: 'Strategy', calculos: 'Cálculos', analiticas: 'Analíticas', equipo: 'Equipo NOK',
+    cerrarSesion: 'Cerrar sesión',
+  },
+  en: {
+    resumen: 'Overview', calendario: 'Calendar', reservas: 'Reservations', resenas: 'Reviews',
+    strategy: 'Strategy', calculos: 'My numbers', analiticas: 'Analytics', equipo: 'NOK Team',
+    cerrarSesion: 'Sign out',
+  },
+}
+
+function readLocaleCookie(): Locale {
+  if (typeof document === 'undefined') return 'es'
+  return document.cookie.includes('nok_locale=en') ? 'en' : 'es'
+}
+
 function BellIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -38,6 +58,17 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
 
   const [showPropMenu, setShowPropMenu] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [locale, setLocale] = useState<Locale>('es')
+  useEffect(() => { setLocale(readLocaleCookie()) }, [])
+  const L = NAV_LABELS[locale]
+
+  async function switchLocale(next: Locale) {
+    if (next === locale) return
+    setLocale(next)
+    document.cookie = `nok_locale=${next};path=/;max-age=31536000;samesite=lax`
+    try { await fetch('/api/owner/locale', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ locale: next }) }) } catch { /* cookie ya quedó */ }
+    router.refresh()
+  }
   const propRef = useRef<HTMLDivElement>(null)
   const userRef = useRef<HTMLDivElement>(null)
 
@@ -55,22 +86,22 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
   const activeLabel = activeGroup ? `▦ ${activeGroup.name}` : (activeProperty?.name ?? '—')
 
   const navLinks = activeGroupId ? [
-    { label: 'Resumen',    href: `/dashboard/group/${activeGroupId}/overview` },
-    { label: 'Reservas',   href: `/dashboard/group/${activeGroupId}/reservations` },
-    { label: 'Reseñas',    href: `/dashboard/group/${activeGroupId}/reviews` },
+    { label: L.resumen,    href: `/dashboard/group/${activeGroupId}/overview` },
+    { label: L.reservas,   href: `/dashboard/group/${activeGroupId}/reservations` },
+    { label: L.resenas,    href: `/dashboard/group/${activeGroupId}/reviews` },
     { label: 'NOK AI',     href: `/dashboard/group/${activeGroupId}/chat`, ai: true },
   ] : activePropertyId ? [
-    { label: 'Resumen',    href: `/dashboard/${activePropertyId}/overview` },
-    { label: 'Calendario', href: `/dashboard/${activePropertyId}/calendar` },
-    { label: 'Reservas',   href: `/dashboard/${activePropertyId}/reservations` },
-    { label: 'Reseñas',    href: `/dashboard/${activePropertyId}/reviews` },
-    { label: 'Revenue',    href: `/dashboard/${activePropertyId}/revenue` },
-    { label: 'Cálculos',   href: `/dashboard/${activePropertyId}/calculos` },
+    { label: L.resumen,    href: `/dashboard/${activePropertyId}/overview` },
+    { label: L.calendario, href: `/dashboard/${activePropertyId}/calendar` },
+    { label: L.reservas,   href: `/dashboard/${activePropertyId}/reservations` },
+    { label: L.resenas,    href: `/dashboard/${activePropertyId}/reviews` },
+    { label: L.strategy,   href: `/dashboard/${activePropertyId}/revenue` },
+    { label: L.calculos,   href: `/dashboard/${activePropertyId}/calculos` },
     { label: 'NOK AI',     href: `/dashboard/${activePropertyId}/chat`, ai: true },
   ] : []
   // Always-visible links
-  const analyticsLink = { label: 'Analíticas', href: '/dashboard/analytics' }
-  const equipoLink = { label: 'Equipo NOK', href: '/dashboard/equipo' }
+  const analyticsLink = { label: L.analiticas, href: '/dashboard/analytics' }
+  const equipoLink = { label: L.equipo, href: '/dashboard/equipo' }
 
   function isActive(href: string) {
     return pathname === href || pathname.startsWith(href)
@@ -248,8 +279,25 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
         </div>
       </div>
 
-      {/* ── Right: bell + avatar ── */}
+      {/* ── Right: idioma + bell + avatar ── */}
       <div className="flex items-center gap-3 shrink-0">
+        {/* Selector de idioma */}
+        <div className="hidden sm:flex items-center rounded-full overflow-hidden" style={{ border: '1px solid rgba(26,26,26,0.1)' }}>
+          {(['es', 'en'] as Locale[]).map(l => (
+            <button
+              key={l}
+              onClick={() => switchLocale(l)}
+              className="px-2.5 py-1 text-[11px] font-semibold uppercase cursor-pointer transition-colors"
+              style={{
+                backgroundColor: locale === l ? 'rgba(131,59,14,0.15)' : 'transparent',
+                color: locale === l ? '#833B0E' : 'rgba(26,26,26,0.35)',
+              }}
+            >
+              {l}
+            </button>
+          ))}
+        </div>
+
         {/* Notification bell */}
         <button
           className="w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer"
@@ -314,7 +362,7 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
                   ;(e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'
                 }}
               >
-                Cerrar sesión
+                {L.cerrarSesion}
               </button>
             </div>
           )}

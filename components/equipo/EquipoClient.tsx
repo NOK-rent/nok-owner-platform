@@ -42,11 +42,33 @@ interface Notification {
   created_at: string
 }
 
+interface WorkItem {
+  id: string
+  tipo: 'inspeccion' | 'incidencia'
+  titulo: string
+  descripcion: string | null
+  valor_usd: number | null
+  pdf_url: string | null
+  fotos: Attachment[] | null
+  status: 'enviada' | 'aceptada' | 'programada' | 'completada'
+  fecha_programada: string | null
+  created_at: string
+  properties: { name: string } | null
+}
+
 interface Props {
   ownerName: string
   properties: PropertyLite[]
   initialTickets: Ticket[]
   notifications: Notification[]
+  initialWorkItems?: WorkItem[]
+}
+
+const WORK_STATUS: Record<string, { es: string; en: string; bg: string; color: string }> = {
+  enviada: { es: 'Pendiente de tu aprobación', en: 'Waiting for your approval', bg: 'rgba(214,167,0,0.14)', color: '#8A6D00' },
+  aceptada: { es: 'Aceptada — NOK programará la fecha', en: 'Accepted — NOK will schedule it', bg: 'rgba(0,128,198,0.12)', color: '#0080C6' },
+  programada: { es: 'Programada', en: 'Scheduled', bg: 'rgba(0,128,198,0.12)', color: '#0080C6' },
+  completada: { es: 'Realizada ✓', en: 'Completed ✓', bg: 'rgba(14,104,69,0.12)', color: '#0E6845' },
 }
 
 const STATUS_LABELS: Record<string, { label: string; bg: string; color: string }> = {
@@ -101,8 +123,26 @@ function AttachmentChips({ attachments }: { attachments?: Attachment[] }) {
   )
 }
 
-export default function EquipoClient({ ownerName, properties, initialTickets, notifications }: Props) {
-  const [tab, setTab] = useState<'conversaciones' | 'comunicados'>('conversaciones')
+export default function EquipoClient({ ownerName, properties, initialTickets, notifications, initialWorkItems = [] }: Props) {
+  const [tab, setTab] = useState<'conversaciones' | 'comunicados' | 'inspecciones'>('conversaciones')
+  const [workItems, setWorkItems] = useState<WorkItem[]>(initialWorkItems)
+  const [acceptingId, setAcceptingId] = useState<string | null>(null)
+  const locale = typeof document !== 'undefined' && document.cookie.includes('nok_locale=en') ? 'en' : 'es'
+
+  async function aceptarInspeccion(id: string) {
+    if (acceptingId) return
+    setAcceptingId(id)
+    try {
+      const res = await fetch(`/api/inspecciones/${id}/aceptar`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error')
+      setWorkItems(prev => prev.map(w => w.id === id ? { ...w, status: 'aceptada' } : w))
+    } catch (e: any) {
+      alert(e.message || 'No se pudo aceptar')
+    } finally {
+      setAcceptingId(null)
+    }
+  }
   const [tickets, setTickets] = useState<Ticket[]>(initialTickets)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [events, setEvents] = useState<TicketEvent[]>([])
@@ -221,8 +261,12 @@ export default function EquipoClient({ ownerName, properties, initialTickets, no
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6">
-        {([['conversaciones', 'Conversaciones'], ['comunicados', `Comunicados de NOK${unreadComunicados ? ` (${unreadComunicados})` : ''}`]] as const).map(([key, label]) => (
+      <div className="flex flex-wrap gap-2 mb-6">
+        {([
+          ['conversaciones', locale === 'en' ? 'Conversations' : 'Conversaciones'],
+          ['comunicados', `${locale === 'en' ? 'NOK updates' : 'Comunicados de NOK'}${unreadComunicados ? ` (${unreadComunicados})` : ''}`],
+          ['inspecciones', `${locale === 'en' ? 'Inspections & repairs' : 'Inspecciones y arreglos'}${workItems.some(w => w.status === 'enviada' && w.tipo === 'inspeccion') ? ' ●' : ''}`],
+        ] as const).map(([key, label]) => (
           <button
             key={key}
             onClick={() => setTab(key)}
@@ -238,7 +282,73 @@ export default function EquipoClient({ ownerName, properties, initialTickets, no
         ))}
       </div>
 
-      {tab === 'comunicados' ? (
+      {tab === 'inspecciones' ? (
+        /* ── Inspecciones y arreglos ── */
+        <div className="max-w-3xl space-y-3">
+          {workItems.length === 0 && (
+            <div className="rounded-2xl p-8 nok-card text-center text-sm" style={{ color: 'rgba(26,26,26,0.4)' }}>
+              {locale === 'en' ? 'No inspections or repairs yet.' : 'Aún no hay inspecciones ni arreglos.'}
+            </div>
+          )}
+          {workItems.map(w => {
+            const st = WORK_STATUS[w.status] ?? WORK_STATUS.enviada
+            return (
+              <div key={w.id} className="rounded-2xl p-5 nok-card">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span>{w.tipo === 'inspeccion' ? '🔧' : '⚠️'}</span>
+                  <p className="text-sm font-semibold text-[#1A1A1A]">{w.titulo}</p>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: st.bg, color: st.color }}>
+                    {locale === 'en' ? st.en : st.es}
+                  </span>
+                  <span className="ml-auto text-[11px]" style={{ color: 'rgba(26,26,26,0.35)' }}>{fmtDate(w.created_at)}</span>
+                </div>
+                <p className="text-xs mt-0.5" style={{ color: 'rgba(26,26,26,0.4)' }}>
+                  {w.properties?.name ?? ''}
+                  {w.valor_usd != null ? ` · USD ${Number(w.valor_usd).toFixed(2)}` : ''}
+                  {w.fecha_programada ? ` · ${locale === 'en' ? 'scheduled for' : 'programada para el'} ${w.fecha_programada}` : ''}
+                </p>
+                {w.descripcion && <p className="text-sm mt-2 whitespace-pre-wrap" style={{ color: 'rgba(26,26,26,0.6)' }}>{w.descripcion}</p>}
+                {w.pdf_url && (
+                  <a href={w.pdf_url} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1.5 rounded-lg text-xs font-medium"
+                    style={{ backgroundColor: 'rgba(26,26,26,0.05)', color: '#833B0E', border: '1px solid rgba(26,26,26,0.08)' }}>
+                    <ClipIcon /> {locale === 'en' ? 'Inspection document (PDF)' : 'Documento de inspección (PDF)'}
+                  </a>
+                )}
+                {(w.fotos ?? []).length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {(w.fotos ?? []).map((f, i) => (
+                      <a key={i} href={f.url} target="_blank" rel="noopener noreferrer">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={f.url} alt={f.name} className="w-24 h-20 object-cover rounded-lg" style={{ border: '1px solid rgba(26,26,26,0.08)' }} />
+                      </a>
+                    ))}
+                  </div>
+                )}
+                {w.tipo === 'inspeccion' && w.status === 'enviada' && (
+                  <button
+                    onClick={() => aceptarInspeccion(w.id)}
+                    disabled={acceptingId === w.id}
+                    className="mt-3 px-5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all disabled:opacity-60"
+                    style={{ backgroundColor: '#0E6845', color: '#FFFFFF' }}
+                  >
+                    {acceptingId === w.id
+                      ? (locale === 'en' ? 'Accepting…' : 'Aceptando…')
+                      : (locale === 'en' ? '✓ Yes, accept the maintenance' : '✓ Sí, acepto el mantenimiento')}
+                  </button>
+                )}
+                {w.tipo === 'inspeccion' && w.status === 'enviada' && (
+                  <p className="text-[11px] mt-2" style={{ color: 'rgba(26,26,26,0.35)' }}>
+                    {locale === 'en'
+                      ? 'Questions? Write to us in the Conversations tab or reply to the email.'
+                      : '¿Dudas? Escríbenos en la pestaña Conversaciones o responde el correo.'}
+                  </p>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      ) : tab === 'comunicados' ? (
         /* ── Comunicados ── */
         <div className="max-w-3xl space-y-3">
           {notifications.length === 0 && (

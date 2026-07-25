@@ -21,7 +21,7 @@ export default async function EquipoPage() {
   const isAdmin = isAdminEmail(owner.email)
 
   const propsQuery = sb.from('properties').select('id, name').eq('active', true).order('name')
-  const [propertiesRes, ticketsRes, notificationsRes] = await Promise.all([
+  const [propertiesRes, ticketsRes, notificationsRes, workItemsRes] = await Promise.all([
     isAdmin ? propsQuery : propsQuery.eq('owner_id', owner.id),
     sb.from('support_tickets')
       .select('id, title, status, area_responsable, apartamento, property_id, urgencia, created_at, updated_at, last_owner_message_at, last_team_message_at')
@@ -33,6 +33,11 @@ export default async function EquipoPage() {
       .eq('owner_id', owner.id)
       .order('created_at', { ascending: false })
       .limit(50),
+    sb.from('owner_work_items')
+      .select('id, tipo, titulo, descripcion, valor_usd, pdf_url, fotos, status, fecha_programada, created_at, properties(name)')
+      .eq('owner_id', owner.id)
+      .order('created_at', { ascending: false })
+      .limit(100),
   ])
 
   return (
@@ -41,6 +46,7 @@ export default async function EquipoPage() {
       properties={propertiesRes.data ?? []}
       initialTickets={ticketsRes.data ?? []}
       notifications={notificationsRes.data ?? []}
+      initialWorkItems={workItemsRes.data ?? []}
     />
   )
 }
