@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation'
 import { loadOwnerProperty } from '@/lib/admin'
 import { getRevenueSnapshot, resolveWheelhouseRef, type RateDay, type OccWindow, type BasePriceBreakdown, type SeasonRange } from '@/lib/wheelhouse'
+import { getLocale } from '@/lib/i18n'
+import { snapshotToEnglish, FLAG_EN } from '@/lib/strategy-i18n'
 
 interface Props {
   params: Promise<{ propertyId: string }>
@@ -19,9 +21,12 @@ function fmtPct01(v: number | null) {
 }
 
 const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+// Idioma del render actual (server component — se setea al inicio de la página)
+let EN = false
 function fmtDay(iso: string) {
   const [, m, d] = iso.split('-')
-  return `${+d} ${MESES_CORTOS[+m - 1]}`
+  return EN ? `${MONTHS_SHORT[+m - 1]} ${+d}` : `${+d} ${MESES_CORTOS[+m - 1]}`
 }
 
 /** Known Wheelhouse flags → owner-friendly Spanish */
@@ -113,7 +118,7 @@ function OccDailyChart({ zone, booked }: { zone: { date: string; occ: number }[]
       <path d={area} fill="rgba(61,155,209,0.10)" />
       <path d={line} fill="none" stroke="#0080C6" strokeWidth={2} strokeLinejoin="round" />
       {/* booked strip */}
-      <text x={P.l - 8} y={stripY + 8} textAnchor="end" fontSize={10} fill="rgba(26,26,26,0.35)">Tus noches</text>
+      <text x={P.l - 8} y={stripY + 8} textAnchor="end" fontSize={10} fill="rgba(26,26,26,0.35)">{EN ? 'Your nights' : 'Tus noches'}</text>
       {zone.map((d, i) => (
         <rect
           key={d.date}
@@ -163,7 +168,10 @@ function BaseBreakdown({ bp }: { bp: BasePriceBreakdown }) {
 
 const MESES_LARGOS = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
 function fmtRange(s: SeasonRange) {
-  const f = (iso: string) => { const [, m, d] = iso.split('-'); return `${+d} ${MESES_LARGOS[+m - 1].slice(0, 3)}` }
+  const f = (iso: string) => {
+    const [, m, d] = iso.split('-')
+    return EN ? `${MONTHS_SHORT[+m - 1]} ${+d}` : `${+d} ${MESES_LARGOS[+m - 1].slice(0, 3)}`
+  }
   return `${f(s.start)} – ${f(s.end)}`
 }
 
@@ -175,7 +183,7 @@ function OccCompare({ windows }: { windows: OccWindow[] }) {
           <div className="flex items-center justify-between text-xs mb-1.5">
             <span style={{ color: 'rgba(26,26,26,0.45)' }}>{w.label}</span>
             <span style={{ color: 'rgba(26,26,26,0.65)' }}>
-              Tu unidad {fmtPct01(w.unit)} · Zona {fmtPct01(w.zone)}
+              {EN ? 'Your unit' : 'Tu unidad'} {fmtPct01(w.unit)} · {EN ? 'Area' : 'Zona'} {fmtPct01(w.zone)}
             </span>
           </div>
           <div className="space-y-1">
@@ -189,8 +197,8 @@ function OccCompare({ windows }: { windows: OccWindow[] }) {
         </div>
       ))}
       <div className="flex gap-5 pt-1 text-xs" style={{ color: 'rgba(26,26,26,0.45)' }}>
-        <span className="flex items-center gap-2"><span className="inline-block w-3 h-1.5 rounded-full" style={{ backgroundColor: '#0E6845' }} /> Tu unidad</span>
-        <span className="flex items-center gap-2"><span className="inline-block w-3 h-1.5 rounded-full" style={{ backgroundColor: '#0080C6' }} /> Zona</span>
+        <span className="flex items-center gap-2"><span className="inline-block w-3 h-1.5 rounded-full" style={{ backgroundColor: '#0E6845' }} /> {EN ? 'Your unit' : 'Tu unidad'}</span>
+        <span className="flex items-center gap-2"><span className="inline-block w-3 h-1.5 rounded-full" style={{ backgroundColor: '#0080C6' }} /> {EN ? 'Area' : 'Zona'}</span>
       </div>
     </div>
   )
@@ -211,8 +219,12 @@ export default async function RevenuePage({ params }: Props) {
   const { property, sb } = await loadOwnerProperty(propertyId)
   if (!property) notFound()
 
+  const locale = await getLocale()
+  EN = locale === 'en'
+
   const whRef = resolveWheelhouseRef(property)
-  const snap = whRef ? await getRevenueSnapshot(whRef.id, whRef.channel) : null
+  const snapEs = whRef ? await getRevenueSnapshot(whRef.id, whRef.channel) : null
+  const snap = snapEs && EN ? snapshotToEnglish(snapEs) : snapEs
 
   // Our booked nights (next 60 days) from the portal's own reservations
   const today = new Date().toISOString().slice(0, 10)
@@ -243,47 +255,49 @@ export default async function RevenuePage({ params }: Props) {
             Revenue Management NOK
           </p>
           <h1 className="font-serif text-4xl font-light text-[#1A1A1A]">
-            La estrategia detrás de {property.name}
+            {EN ? `The strategy behind ${property.name}` : `La estrategia detrás de ${property.name}`}
           </h1>
           <p className="text-sm mt-2" style={{ color: 'rgba(26,26,26,0.45)' }}>
-            Cómo decidimos tu tarifa cada día y cómo se compara tu unidad con su zona.
+            {EN ? 'How we set your rate every day and how your unit compares to its area.' : 'Cómo decidimos tu tarifa cada día y cómo se compara tu unidad con su zona.'}
           </p>
         </div>
 
         {!snap ? (
           <div className="rounded-2xl p-8 nok-card">
-            <p className="font-serif text-2xl font-light text-[#1A1A1A] mb-2">Estamos preparando esta vista</p>
+            <p className="font-serif text-2xl font-light text-[#1A1A1A] mb-2">{EN ? 'We are preparing this view' : 'Estamos preparando esta vista'}</p>
             <p className="text-sm" style={{ color: 'rgba(26,26,26,0.5)' }}>
-              El módulo de Revenue Management se está configurando para esta propiedad. Muy pronto vas a poder ver aquí la estrategia de precios y la comparación con tu zona.
+              {EN
+                ? 'The Revenue Management module is being configured for this property. Very soon you will see the pricing strategy and area comparison here.'
+                : 'El módulo de Revenue Management se está configurando para esta propiedad. Muy pronto vas a poder ver aquí la estrategia de precios y la comparación con tu zona.'}
             </p>
           </div>
         ) : (
           <>
             {/* Metric tiles */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <MetricCard label="Tarifa publicada hoy" value={fmtUsd(snap.todayPrice)} sub="Recalculada a diario" />
+              <MetricCard label={EN ? 'Published rate today' : 'Tarifa publicada hoy'} value={fmtUsd(snap.todayPrice)} sub={EN ? 'Recalculated daily' : 'Recalculada a diario'} />
               <MetricCard
-                label="Ocupación próx. 30 días"
+                label={EN ? 'Occupancy next 30 days' : 'Ocupación próx. 30 días'}
                 value={fmtPct01(snap.occWindows[1]?.unit ?? null)}
-                sub={snap.occWindows[1]?.zone != null ? `La zona va en ${fmtPct01(snap.occWindows[1].zone)}` : undefined}
+                sub={snap.occWindows[1]?.zone != null ? (EN ? `The area is at ${fmtPct01(snap.occWindows[1].zone)}` : `La zona va en ${fmtPct01(snap.occWindows[1].zone)}`) : undefined}
               />
               <MetricCard
-                label="Noches vendidas últimos 7 días"
+                label={EN ? 'Nights sold last 7 days' : 'Noches vendidas últimos 7 días'}
                 value={snap.pickup7 != null ? String(Math.round(snap.pickup7)) : '—'}
-                sub="Ritmo de reserva reciente"
+                sub={EN ? 'Recent booking pace' : 'Ritmo de reserva reciente'}
               />
               <MetricCard
-                label="Posición vs. zona"
+                label={EN ? 'Position vs. area' : 'Posición vs. zona'}
                 value={snap.posVsZonePct != null ? `${snap.posVsZonePct > 0 ? '+' : ''}${snap.posVsZonePct}%` : '—'}
-                sub={snap.zoneListings ? `${snap.zoneListings} propiedades comparables` : undefined}
+                sub={snap.zoneListings ? (EN ? `${snap.zoneListings} comparable properties` : `${snap.zoneListings} propiedades comparables`) : undefined}
               />
             </div>
 
             {/* Strategy */}
             <div>
-              <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-1">Qué estamos haciendo con tu tarifa</h2>
+              <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-1">{EN ? 'What we are doing with your rate' : 'Qué estamos haciendo con tu tarifa'}</h2>
               <p className="text-sm mb-5" style={{ color: 'rgba(26,26,26,0.45)' }}>
-                Estas son las palancas configuradas específicamente para tu unidad{snap.tierName ? ` (plan ${snap.tierName})` : ''}.
+                {EN ? 'These are the levers configured specifically for your unit' : 'Estas son las palancas configuradas específicamente para tu unidad'}{snap.tierName ? ` (plan ${snap.tierName})` : ''}.
               </p>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {snap.strategy.map(s => (
@@ -299,16 +313,18 @@ export default async function RevenuePage({ params }: Props) {
             {snap.rateDays.length >= 7 && (
               <div className="rounded-2xl p-6 nok-card">
                 <div className="flex flex-wrap items-baseline justify-between gap-3 mb-4">
-                  <h2 className="font-serif text-2xl font-light text-[#1A1A1A]">Tu tarifa vs. la zona</h2>
+                  <h2 className="font-serif text-2xl font-light text-[#1A1A1A]">{EN ? 'Your rate vs. the area' : 'Tu tarifa vs. la zona'}</h2>
                   <div className="flex gap-5 text-xs" style={{ color: 'rgba(26,26,26,0.45)' }}>
-                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-1 rounded-full" style={{ backgroundColor: '#0E6845' }} /> Tu tarifa</span>
-                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-1 rounded-full" style={{ backgroundColor: '#0080C6' }} /> Mediana de la zona</span>
-                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-2.5 rounded-sm" style={{ backgroundColor: 'rgba(148,184,207,0.25)' }} /> Rango de la zona</span>
+                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-1 rounded-full" style={{ backgroundColor: '#0E6845' }} /> {EN ? 'Your rate' : 'Tu tarifa'}</span>
+                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-1 rounded-full" style={{ backgroundColor: '#0080C6' }} /> {EN ? 'Area median' : 'Mediana de la zona'}</span>
+                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-2.5 rounded-sm" style={{ backgroundColor: 'rgba(148,184,207,0.25)' }} /> {EN ? 'Area range' : 'Rango de la zona'}</span>
                   </div>
                 </div>
                 <RateChart days={snap.rateDays} />
                 <p className="text-xs mt-3" style={{ color: 'rgba(26,26,26,0.35)' }}>
-                  Próximas {Math.min(60, snap.rateDays.length)} noches, en USD. La zona son las propiedades comparables alrededor de tu unidad.
+                  {EN
+                    ? `Next ${Math.min(60, snap.rateDays.length)} nights, in USD. The area is the set of comparable properties around your unit.`
+                    : `Próximas ${Math.min(60, snap.rateDays.length)} noches, en USD. La zona son las propiedades comparables alrededor de tu unidad.`}
                 </p>
               </div>
             )}
@@ -317,15 +333,17 @@ export default async function RevenuePage({ params }: Props) {
             {snap.zoneOccDaily.length >= 7 && (
               <div className="rounded-2xl p-6 nok-card">
                 <div className="flex flex-wrap items-baseline justify-between gap-3 mb-4">
-                  <h2 className="font-serif text-2xl font-light text-[#1A1A1A]">Ocupación de la zona, día a día</h2>
+                  <h2 className="font-serif text-2xl font-light text-[#1A1A1A]">{EN ? 'Area occupancy, day by day' : 'Ocupación de la zona, día a día'}</h2>
                   <div className="flex gap-5 text-xs" style={{ color: 'rgba(26,26,26,0.45)' }}>
-                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-1 rounded-full" style={{ backgroundColor: '#0080C6' }} /> % de la zona ya reservado</span>
-                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-2.5 rounded-sm" style={{ backgroundColor: '#0E6845' }} /> Tus noches reservadas</span>
+                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-1 rounded-full" style={{ backgroundColor: '#0080C6' }} /> {EN ? '% of the area already booked' : '% de la zona ya reservado'}</span>
+                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-2.5 rounded-sm" style={{ backgroundColor: '#0E6845' }} /> {EN ? 'Your booked nights' : 'Tus noches reservadas'}</span>
                   </div>
                 </div>
                 <OccDailyChart zone={snap.zoneOccDaily} booked={bookedDays} />
                 <p className="text-xs mt-3" style={{ color: 'rgba(26,26,26,0.35)' }}>
-                  La línea muestra qué porcentaje de las propiedades comparables ya está reservado para cada noche. La franja verde son tus noches ya vendidas: cada noche verde sobre una zona con poca ocupación es una noche que le ganamos al mercado.
+                  {EN
+                    ? 'The line shows what share of comparable properties is already booked for each night. The green strip is your sold nights: every green night over a low-occupancy area is a night we won from the market.'
+                    : 'La línea muestra qué porcentaje de las propiedades comparables ya está reservado para cada noche. La franja verde son tus noches ya vendidas: cada noche verde sobre una zona con poca ocupación es una noche que le ganamos al mercado.'}
                 </p>
               </div>
             )}
@@ -333,21 +351,21 @@ export default async function RevenuePage({ params }: Props) {
             {/* Occupancy vs zone */}
             <div className="grid lg:grid-cols-2 gap-4 items-start">
               <div className="rounded-2xl p-6 nok-card">
-                <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-4">Ocupación: tu unidad vs. la zona</h2>
+                <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-4">{EN ? 'Occupancy: your unit vs. the area' : 'Ocupación: tu unidad vs. la zona'}</h2>
                 <OccCompare windows={snap.occWindows} />
               </div>
 
               {/* Signals */}
               <div className="rounded-2xl p-6 nok-card">
-                <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-4">Señales del motor</h2>
+                <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-4">{EN ? 'Engine signals' : 'Señales del motor'}</h2>
                 {snap.flags.length === 0 ? (
                   <p className="text-sm" style={{ color: 'rgba(26,26,26,0.5)' }}>
-                    Sin alertas activas — la estrategia está funcionando dentro de lo esperado. ✓
+                    {EN ? 'No active alerts — the strategy is performing as expected. ✓' : 'Sin alertas activas — la estrategia está funcionando dentro de lo esperado. ✓'}
                   </p>
                 ) : (
                   <div className="space-y-4">
                     {snap.flags.map(f => {
-                      const es = FLAG_ES[f.name]
+                      const es = EN ? FLAG_EN[f.name] : FLAG_ES[f.name]
                       return (
                         <div key={f.name} className="flex gap-3">
                           <div
@@ -373,33 +391,39 @@ export default async function RevenuePage({ params }: Props) {
             {/* Base price breakdown */}
             {snap.basePrice && (
               <div className="rounded-2xl p-6 nok-card">
-                <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-1">De dónde sale tu precio base</h2>
+                <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-1">{EN ? 'Where your base price comes from' : 'De dónde sale tu precio base'}</h2>
                 <p className="text-sm mb-6" style={{ color: 'rgba(26,26,26,0.45)' }}>
-                  El motor parte de lo que cobra tu mercado y lo ajusta por las características reales de tu unidad. Así se construye la recomendación de hoy:
+                  {EN
+                    ? "The engine starts from what your market charges and adjusts it for your unit's real characteristics. This is how today's recommendation is built:"
+                    : 'El motor parte de lo que cobra tu mercado y lo ajusta por las características reales de tu unidad. Así se construye la recomendación de hoy:'}
                 </p>
                 <div className="grid lg:grid-cols-2 gap-8 items-start">
                   <BaseBreakdown bp={snap.basePrice} />
                   <div className="space-y-4">
                     <div className="flex items-end gap-6">
                       <div>
-                        <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'rgba(26,26,26,0.35)' }}>Recomendado</p>
+                        <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'rgba(26,26,26,0.35)' }}>{EN ? 'Recommended' : 'Recomendado'}</p>
                         <p className="font-serif text-4xl font-light text-[#1A1A1A]">{fmtUsd(snap.basePrice.recommended)}</p>
                       </div>
                       <div>
-                        <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'rgba(26,26,26,0.35)' }}>Aplicado</p>
+                        <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'rgba(26,26,26,0.35)' }}>{EN ? 'Applied' : 'Aplicado'}</p>
                         <p className="font-serif text-4xl font-light" style={{ color: '#0E6845' }}>{fmtUsd(snap.basePrice.selected)}</p>
                       </div>
                     </div>
                     <p className="text-sm leading-relaxed" style={{ color: 'rgba(26,26,26,0.55)' }}>
                       {snap.basePrice.selected < snap.basePrice.recommended
-                        ? `Hoy aplicamos un precio base ${fmtUsd(snap.basePrice.recommended - snap.basePrice.selected)} por debajo del recomendado — un perfil deliberadamente competitivo para sostener la ocupación por encima de la zona. Cuando el ritmo de reservas lo permite, lo acercamos al recomendado.`
+                        ? (EN
+                            ? `Today we apply a base price ${fmtUsd(snap.basePrice.recommended - snap.basePrice.selected)} below the recommendation — a deliberately competitive profile to keep occupancy above the area. When booking pace allows it, we move it closer to the recommendation.`
+                            : `Hoy aplicamos un precio base ${fmtUsd(snap.basePrice.recommended - snap.basePrice.selected)} por debajo del recomendado — un perfil deliberadamente competitivo para sostener la ocupación por encima de la zona. Cuando el ritmo de reservas lo permite, lo acercamos al recomendado.`)
                         : snap.basePrice.selected > snap.basePrice.recommended
-                          ? `Hoy aplicamos un precio base por encima del recomendado, aprovechando el buen ritmo de reservas de tu unidad.`
-                          : `Hoy aplicamos exactamente el precio base recomendado por el motor.`}
-                      {snap.basePrice.anchorCredibility != null && ` Confianza del modelo: ${snap.basePrice.anchorCredibility}%.`}
+                          ? (EN ? 'Today we apply a base price above the recommendation, leveraging your unit’s strong booking pace.' : 'Hoy aplicamos un precio base por encima del recomendado, aprovechando el buen ritmo de reservas de tu unidad.')
+                          : (EN ? 'Today we apply exactly the base price recommended by the engine.' : 'Hoy aplicamos exactamente el precio base recomendado por el motor.')}
+                      {snap.basePrice.anchorCredibility != null && (EN ? ` Model confidence: ${snap.basePrice.anchorCredibility}%.` : ` Confianza del modelo: ${snap.basePrice.anchorCredibility}%.`)}
                     </p>
                     <p className="text-xs leading-relaxed" style={{ color: 'rgba(26,26,26,0.35)' }}>
-                      Rango de trabajo del motor: {fmtUsd(snap.basePrice.conservative)} (conservador) – {fmtUsd(snap.basePrice.aggressive)} (agresivo). Sobre este precio base actúan después la temporada, los eventos, el día de la semana y la demanda en tiempo real.
+                      {EN
+                        ? `Engine working range: ${fmtUsd(snap.basePrice.conservative)} (conservative) – ${fmtUsd(snap.basePrice.aggressive)} (aggressive). Seasonality, events, day of week and real-time demand then act on top of this base price.`
+                        : `Rango de trabajo del motor: ${fmtUsd(snap.basePrice.conservative)} (conservador) – ${fmtUsd(snap.basePrice.aggressive)} (agresivo). Sobre este precio base actúan después la temporada, los eventos, el día de la semana y la demanda en tiempo real.`}
                     </p>
                   </div>
                 </div>
@@ -408,35 +432,43 @@ export default async function RevenuePage({ params }: Props) {
 
             {/* How the engine responds to demand */}
             <div>
-              <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-1">Cómo responde el motor a la demanda</h2>
+              <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-1">{EN ? 'How the engine responds to demand' : 'Cómo responde el motor a la demanda'}</h2>
               <p className="text-sm mb-5" style={{ color: 'rgba(26,26,26,0.45)' }}>
-                Tu tarifa no es fija: reacciona todos los días a lo que pasa en tu zona.
+                {EN ? 'Your rate is not fixed: it reacts every day to what happens in your area.' : 'Tu tarifa no es fija: reacciona todos los días a lo que pasa en tu zona.'}
               </p>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {snap.demandSensitivityPct != null && (
                   <div className="rounded-2xl p-5 nok-card">
-                    <p className="text-xs uppercase tracking-widest mb-2" style={{ color: '#D6A700' }}>Sensibilidad a la demanda</p>
+                    <p className="text-xs uppercase tracking-widest mb-2" style={{ color: '#D6A700' }}>{EN ? 'Demand sensitivity' : 'Sensibilidad a la demanda'}</p>
                     <p className="font-serif text-3xl font-light text-[#1A1A1A] mb-2">{snap.demandSensitivityPct}%</p>
                     <p className="text-sm leading-relaxed" style={{ color: 'rgba(26,26,26,0.6)' }}>
-                      Cuando la zona se llena más rápido de lo esperado, la tarifa sube; cuando el ritmo afloja, baja para no perder noches. Al {snap.demandSensitivityPct}%, tu unidad responde {snap.demandSensitivityPct >= 100 ? 'con toda la fuerza de la señal del mercado' : 'de forma amortiguada a la señal del mercado'}.
+                      {EN
+                        ? `When the area fills faster than expected, the rate goes up; when pace slows, it comes down to avoid losing nights. At ${snap.demandSensitivityPct}%, your unit responds ${snap.demandSensitivityPct >= 100 ? 'with the full strength of the market signal' : 'in a dampened way to the market signal'}.`
+                        : `Cuando la zona se llena más rápido de lo esperado, la tarifa sube; cuando el ritmo afloja, baja para no perder noches. Al ${snap.demandSensitivityPct}%, tu unidad responde ${snap.demandSensitivityPct >= 100 ? 'con toda la fuerza de la señal del mercado' : 'de forma amortiguada a la señal del mercado'}.`}
                     </p>
                   </div>
                 )}
                 <div className="rounded-2xl p-5 nok-card">
-                  <p className="text-xs uppercase tracking-widest mb-2" style={{ color: '#D6A700' }}>Ritmo de ocupación</p>
-                  <p className="font-serif text-3xl font-light text-[#1A1A1A] mb-2">{snap.pacingAdjusted ? 'Activo' : 'Estándar'}</p>
+                  <p className="text-xs uppercase tracking-widest mb-2" style={{ color: '#D6A700' }}>{EN ? 'Occupancy pacing' : 'Ritmo de ocupación'}</p>
+                  <p className="font-serif text-3xl font-light text-[#1A1A1A] mb-2">{snap.pacingAdjusted ? (EN ? 'Active' : 'Activo') : (EN ? 'Standard' : 'Estándar')}</p>
                   <p className="text-sm leading-relaxed" style={{ color: 'rgba(26,26,26,0.6)' }}>
-                    El motor compara cuántas noches deberías tener vendidas a esta altura vs. cuántas tienes. Si vas adelantado, defiende tarifa; si vas atrasado, se vuelve más agresivo para cerrar la brecha.
+                    {EN
+                      ? 'The engine compares how many nights you should have sold by now vs. how many you have. If you are ahead, it defends rate; if behind, it gets more aggressive to close the gap.'
+                      : 'El motor compara cuántas noches deberías tener vendidas a esta altura vs. cuántas tienes. Si vas adelantado, defiende tarifa; si vas atrasado, se vuelve más agresivo para cerrar la brecha.'}
                   </p>
                 </div>
                 {snap.historicalAnchoringPct != null && (
                   <div className="rounded-2xl p-5 nok-card">
-                    <p className="text-xs uppercase tracking-widest mb-2" style={{ color: '#D6A700' }}>Anclaje al historial</p>
+                    <p className="text-xs uppercase tracking-widest mb-2" style={{ color: '#D6A700' }}>{EN ? 'Historical anchoring' : 'Anclaje al historial'}</p>
                     <p className="font-serif text-3xl font-light text-[#1A1A1A] mb-2">{snap.historicalAnchoringPct}%</p>
                     <p className="text-sm leading-relaxed" style={{ color: 'rgba(26,26,26,0.6)' }}>
                       {snap.historicalAnchoringPct === 0
-                        ? 'Tu precio se basa 100% en el mercado actual, sin dejarse arrastrar por tarifas históricas de la unidad — ideal para capturar el potencial real de cada temporada.'
-                        : `Un ${snap.historicalAnchoringPct}% del precio se ancla a las tarifas históricas de tu unidad para dar estabilidad, y el resto sigue al mercado actual.`}
+                        ? (EN
+                            ? "Your price is based 100% on the current market, without being dragged by the unit's historical rates — ideal to capture each season's real potential."
+                            : 'Tu precio se basa 100% en el mercado actual, sin dejarse arrastrar por tarifas históricas de la unidad — ideal para capturar el potencial real de cada temporada.')
+                        : (EN
+                            ? `${snap.historicalAnchoringPct}% of the price anchors to your unit's historical rates for stability, and the rest follows the current market.`
+                            : `Un ${snap.historicalAnchoringPct}% del precio se ancla a las tarifas históricas de tu unidad para dar estabilidad, y el resto sigue al mercado actual.`)}
                     </p>
                   </div>
                 )}
@@ -446,28 +478,28 @@ export default async function RevenuePage({ params }: Props) {
             {/* Insights */}
             {(snap.revenueScore30 != null || snap.occRatio30 != null || snap.upcomingSeasons.length > 0) && (
               <div>
-                <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-5">Insights de tu unidad</h2>
+                <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-5">{EN ? 'Insights for your unit' : 'Insights de tu unidad'}</h2>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   {snap.revenueScore30 != null && (
                     <MetricCard
-                      label="Revenue score próx. 30 días"
+                      label={EN ? 'Revenue score next 30 days' : 'Revenue score próx. 30 días'}
                       value={`${snap.revenueScore30}/100`}
-                      sub="Qué tan bien está capturando ingresos tu unidad vs. su potencial"
+                      sub={EN ? 'How well your unit is capturing revenue vs. its potential' : 'Qué tan bien está capturando ingresos tu unidad vs. su potencial'}
                     />
                   )}
                   {snap.occRatio30 != null && snap.occRatio30 > 0 && (
                     <MetricCard
-                      label="Ocupación vs. zona"
+                      label={EN ? 'Occupancy vs. area' : 'Ocupación vs. zona'}
                       value={`${snap.occRatio30.toFixed(1)}×`}
-                      sub="Veces por encima de la ocupación de tu zona (próx. 30 días)"
+                      sub={EN ? "Times above your area's occupancy (next 30 days)" : 'Veces por encima de la ocupación de tu zona (próx. 30 días)'}
                     />
                   )}
                   {snap.bookings30 != null && (
-                    <MetricCard label="Reservas próx. 30 días" value={String(snap.bookings30)} sub="Reservas confirmadas que tocan este período" />
+                    <MetricCard label={EN ? 'Bookings next 30 days' : 'Reservas próx. 30 días'} value={String(snap.bookings30)} sub={EN ? 'Confirmed reservations touching this period' : 'Reservas confirmadas que tocan este período'} />
                   )}
                   {snap.upcomingSeasons.length > 0 && (
                     <div className="rounded-2xl p-5 nok-card">
-                      <p className="text-xs uppercase tracking-widest mb-3" style={{ color: 'rgba(26,26,26,0.35)' }}>Próximas temporadas</p>
+                      <p className="text-xs uppercase tracking-widest mb-3" style={{ color: 'rgba(26,26,26,0.35)' }}>{EN ? 'Upcoming seasons' : 'Próximas temporadas'}</p>
                       <div className="space-y-2">
                         {snap.upcomingSeasons.map(s => (
                           <div key={s.name} className="flex items-baseline justify-between gap-2 text-sm">
@@ -484,8 +516,9 @@ export default async function RevenuePage({ params }: Props) {
 
             {/* Methodology note */}
             <p className="text-xs leading-relaxed" style={{ color: 'rgba(26,26,26,0.3)' }}>
-              Los precios se recalculan y publican automáticamente todos los días{snap.horizonDays ? ` con un horizonte de ${snap.horizonDays} días` : ''}.
-              Datos de zona actualizados varias veces al día por Revenue Management NOK. Los montos de la zona pueden convertirse de moneda local a USD con la tasa del día.
+              {EN
+                ? `Prices are recalculated and published automatically every day${snap.horizonDays ? ` with a ${snap.horizonDays}-day horizon` : ''}. Area data is refreshed several times a day by NOK Revenue Management. Area amounts may be converted from local currency to USD at the daily rate.`
+                : `Los precios se recalculan y publican automáticamente todos los días${snap.horizonDays ? ` con un horizonte de ${snap.horizonDays} días` : ''}. Datos de zona actualizados varias veces al día por Revenue Management NOK. Los montos de la zona pueden convertirse de moneda local a USD con la tasa del día.`}
             </p>
           </>
         )}
