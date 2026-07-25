@@ -6,6 +6,7 @@ import SupportForm from '@/components/dashboard/SupportForm'
 import MonthPills from '@/components/dashboard/MonthPills'
 import { loadOwnerProperty } from '@/lib/admin'
 import { sumMonthCostsUSD, sumRangeCostsUSD, type OwnerCostRow } from '@/lib/owner-costs'
+import { getOperationsFacts } from '@/lib/operations-facts'
 
 interface Props {
   params: Promise<{ propertyId: string }>
@@ -254,6 +255,9 @@ export default async function OverviewPage({ params, searchParams }: Props) {
   const ownerCostsMonthUSD = sumMonthCostsUSD(ownerCostRows, monthStartDate, monthEndDate, toUSD)
   const ownerCostsYtdUSD = sumRangeCostsUSD(ownerCostRows, yearStartDate, monthEndDate, toUSD)
 
+  // Operations facts del mes (mensajes respondidos, limpiezas, camas tendidas)
+  const opsFacts = await getOperationsFacts(sb, property, selectedMonthKey, checkouts)
+
   const netRevenue = grossRevenue - commAmount - cleaningCostUSD - directBookingCommission - monthUtilitiesUSD - monthMaintenanceUSD - ownerCostsMonthUSD
 
   // YTD financial
@@ -493,6 +497,24 @@ export default async function OverviewPage({ params, searchParams }: Props) {
           <MetricCard label="Ocupación 12 meses" value={fmtPct(trailing12Occupancy)} sub={`${trailing12Nights} noches`} />
           <MetricCard label="ADR YTD" value={ytdAdr > 0 ? fmt(ytdAdr) : '—'} sub="tarifa promedio neta" />
           <MetricCard label="Reservas YTD" value={String(ytdReservations.length)} sub={`${ytdNights} noches totales`} />
+        </div>
+
+        {/* Operación del mes */}
+        <div>
+          <p className="text-xs uppercase tracking-widest mb-3" style={{ color: 'rgba(26,26,26,0.35)' }}>
+            Operación del mes — {selectedMonthDate.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })}
+          </p>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            {opsFacts.mensajes != null && (
+              <MetricCard label="Mensajes respondidos" value={String(opsFacts.mensajes)} sub="respuestas de NOK a tus huéspedes" />
+            )}
+            <MetricCard label="Limpiezas realizadas" value={String(opsFacts.limpiezas)} sub="en tu apartamento este mes" />
+            <MetricCard
+              label="Camas tendidas"
+              value={String(opsFacts.camas)}
+              sub={`${property.bedrooms ?? 0} habitaciones × ${checkouts} check-outs`}
+            />
+          </div>
         </div>
 
         {/* Ingresos confirmados — próximos 12 meses */}

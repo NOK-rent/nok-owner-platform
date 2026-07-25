@@ -24,7 +24,7 @@ const TOKEN_CACHE_KEY = 'guesty_access_token'
 
 let memoryCache: { token: string; expiresAt: number } | null = null
 
-async function getAccessToken(): Promise<string> {
+export async function getAccessToken(): Promise<string> {
   // 1. Check in-memory cache
   if (memoryCache && Date.now() < memoryCache.expiresAt - 60_000) {
     return memoryCache.token
