@@ -19,12 +19,12 @@ type Locale = 'es' | 'en'
 const NAV_LABELS: Record<Locale, Record<string, string>> = {
   es: {
     resumen: 'Resumen', calendario: 'Calendario', reservas: 'Reservas', resenas: 'Reseñas',
-    strategy: 'Strategy', calculos: 'Cálculos', analiticas: 'Analíticas', equipo: 'Equipo NOK',
+    strategy: 'Strategy', calculos: 'Cálculos', actividad: 'Actividad', analiticas: 'Analíticas', equipo: 'Equipo NOK',
     cerrarSesion: 'Cerrar sesión',
   },
   en: {
     resumen: 'Overview', calendario: 'Calendar', reservas: 'Reservations', resenas: 'Reviews',
-    strategy: 'Strategy', calculos: 'My numbers', analiticas: 'Analytics', equipo: 'NOK Team',
+    strategy: 'Strategy', calculos: 'My numbers', actividad: 'Activity', analiticas: 'Analytics', equipo: 'NOK Team',
     cerrarSesion: 'Sign out',
   },
 }
@@ -98,6 +98,7 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
     { label: L.resenas,    href: `/dashboard/${activePropertyId}/reviews` },
     { label: L.strategy,   href: `/dashboard/${activePropertyId}/revenue` },
     { label: L.calculos,   href: `/dashboard/${activePropertyId}/calculos` },
+    { label: L.actividad,  href: `/dashboard/${activePropertyId}/timeline` },
     { label: 'NOK AI',     href: `/dashboard/${activePropertyId}/chat`, ai: true },
   ] : []
   // Always-visible links

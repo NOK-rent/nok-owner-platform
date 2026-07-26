@@ -6,6 +6,9 @@ import {
   type OccWindow, type BasePriceBreakdown, type SeasonRange, type MarketPosition, type BasePriceHistoryPoint,
   type YearVsMarketMonth,
 } from '@/lib/wheelhouse'
+import { getMarketRevpar90, getListingQuality } from '@/lib/wheelhouse'
+import { computeYearProjection, computeUnitRevpar90, computeHealthScore } from '@/lib/owner-insights'
+import { getWeeklyBriefing } from '@/lib/ai/briefing'
 import { getLocale } from '@/lib/i18n'
 import { snapshotToEnglish, FLAG_EN } from '@/lib/strategy-i18n'
 import { RateChartInteractive, OccDailyChartInteractive } from '@/components/dashboard/StrategyCharts'
@@ -254,6 +257,48 @@ export default async function RevenuePage({ params }: Props) {
     .order('detected_at', { ascending: false })
     .limit(20)
 
+  // Financial context, listing health and the weekly AI briefing
+  const since7d = new Date(Date.now() - 7 * 86400000).toISOString()
+  const [projection, unitRevpar, marketRevpar, quality, reviewStats, week] = await Promise.all([
+    computeYearProjection(sb, propertyId, yearVsMarket).catch(() => null),
+    computeUnitRevpar90(sb, propertyId).catch(() => null),
+    whRef ? getMarketRevpar90(whRef.id, whRef.channel) : Promise.resolve(null),
+    whRef ? getListingQuality(whRef.id, whRef.channel) : Promise.resolve(null),
+    sb.from('reviews').select('overall_score').eq('property_id', propertyId).not('overall_score', 'is', null).then((r: any) => {
+      const scores = (r.data ?? []).map((x: any) => Number(x.overall_score)).filter((v: number) => v > 0)
+      return { avg: scores.length ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length : null, count: scores.length }
+    }),
+    Promise.all([
+      sb.from('reservations').select('owner_revenue, total_price, currency').eq('property_id', propertyId).in('status', ['confirmed', 'checked_in']).eq('is_blocked', false).gte('guesty_created_at', since7d),
+      sb.from('reviews').select('overall_score').eq('property_id', propertyId).gte('submitted_at', since7d),
+      sb.from('rate_change_events').select('id').eq('property_id', propertyId).gte('detected_at', since7d),
+    ]),
+  ])
+
+  const health = computeHealthScore({
+    avgRating: reviewStats.avg,
+    reviewCount: Math.max(reviewStats.count, quality?.numReviews ?? 0) || null,
+    numPhotos: quality?.numPhotos ?? null,
+    amenitiesCount: quality?.amenitiesCount ?? null,
+  })
+
+  let briefing: string | null = null
+  if (snap) {
+    const [wb, wr, wc] = week as any[]
+    const newBookings = wb.data ?? []
+    briefing = await getWeeklyBriefing(propertyId, {
+      propertyName: property.name,
+      newBookings7d: newBookings.length,
+      newBookingsRevenueUSD: Math.round(newBookings.reduce((s: number, b: any) => s + (b.owner_revenue ?? b.total_price ?? 0) * (b.currency === 'COP' ? 1 / 4100 : b.currency === 'DOP' ? 1 / 58 : 1), 0)),
+      newReviews7d: (wr.data ?? []).map((x: any) => ({ score: x.overall_score })),
+      rateChanges7d: (wc.data ?? []).length,
+      occNext30: snap.occWindows[1]?.unit ?? null,
+      zoneOccNext30: snap.occWindows[1]?.zone ?? null,
+      revenueScore30: snap.revenueScore30,
+      todayPrice: snap.todayPrice,
+    }, EN ? 'en' : 'es').catch(() => null)
+  }
+
   // Our booked nights (next 60 days) from the portal's own reservations
   const today = new Date().toISOString().slice(0, 10)
   const horizon60 = new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10)
@@ -301,6 +346,16 @@ export default async function RevenuePage({ params }: Props) {
           </div>
         ) : (
           <>
+            {/* Weekly AI briefing */}
+            {briefing && (
+              <div className="rounded-2xl p-6 nok-card" style={{ borderLeft: '3px solid #833B0E' }}>
+                <p className="text-xs uppercase tracking-widest mb-2" style={{ color: '#833B0E' }}>
+                  NOK AI · {EN ? 'Your week' : 'Tu semana'}
+                </p>
+                <p className="font-serif text-lg leading-relaxed text-[#1A1A1A]">{briefing}</p>
+              </div>
+            )}
+
             {/* Metric tiles */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <MetricCard label={EN ? 'Published rate today' : 'Tarifa publicada hoy'} value={fmtUsd(snap.todayPrice)} sub={EN ? 'Recalculated daily' : 'Recalculada a diario'} />
@@ -320,6 +375,63 @@ export default async function RevenuePage({ params }: Props) {
                 sub={snap.zoneListings ? (EN ? `${snap.zoneListings} comparable properties` : `${snap.zoneListings} propiedades comparables`) : undefined}
               />
             </div>
+
+            {/* Year projection + RevPar vs market */}
+            {(projection || (unitRevpar != null && marketRevpar != null)) && (
+              <div className="grid lg:grid-cols-2 gap-4 items-stretch">
+                {projection && (
+                  <div className="rounded-2xl p-6 nok-card">
+                    <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-1">{EN ? `Where ${projection.year} is heading` : `Cómo viene ${projection.year}`}</h2>
+                    <div className="flex items-end gap-3 my-4">
+                      <p className="font-serif text-5xl font-light" style={{ color: '#0E6845' }}>{fmtUsd(projection.totalUSD)}</p>
+                      <p className="text-sm pb-1" style={{ color: 'rgba(26,26,26,0.45)' }}>{EN ? 'projected full year' : 'proyección de cierre de año'}</p>
+                    </div>
+                    <div className="space-y-1.5 text-sm" style={{ color: 'rgba(26,26,26,0.6)' }}>
+                      <div className="flex justify-between"><span>{EN ? 'Already earned' : 'Ya generado'}</span><span className="tabular-nums text-[#1A1A1A]">{fmtUsd(projection.ytdUSD)}</span></div>
+                      <div className="flex justify-between"><span>{EN ? 'Confirmed bookings ahead' : 'Reservas confirmadas por venir'}</span><span className="tabular-nums text-[#1A1A1A]">{fmtUsd(projection.confirmedFutureUSD)}</span></div>
+                      <div className="flex justify-between"><span>{EN ? 'Estimated still to sell' : 'Estimado aún por vender'}</span><span className="tabular-nums" style={{ color: 'rgba(26,26,26,0.45)' }}>{fmtUsd(projection.estimatedExtraUSD)}</span></div>
+                    </div>
+                    <p className="text-xs mt-4 leading-relaxed" style={{ color: 'rgba(26,26,26,0.35)' }}>
+                      {projection.monthsWithHistory >= 2
+                        ? (EN
+                            ? 'The estimate uses your recent months shaped by your market\'s seasonality. It updates as bookings come in.'
+                            : 'El estimado usa tus meses recientes ajustados por la temporada de tu mercado. Se actualiza a medida que entran reservas.')
+                        : (EN
+                            ? 'Your unit has little history yet, so the projection only counts confirmed bookings for now.'
+                            : 'Tu unidad aún tiene poca historia, así que la proyección solo cuenta reservas confirmadas por ahora.')}
+                    </p>
+                  </div>
+                )}
+                {unitRevpar != null && marketRevpar != null && marketRevpar > 0 && (
+                  <div className="rounded-2xl p-6 nok-card">
+                    <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-1">{EN ? 'RevPar: your unit vs. the market' : 'RevPar: tu unidad vs. el mercado'}</h2>
+                    <p className="text-sm mb-4" style={{ color: 'rgba(26,26,26,0.45)' }}>
+                      {EN ? 'Revenue per available night, last 90 days.' : 'Ingreso por noche disponible, últimos 90 días.'}
+                    </p>
+                    <div className="flex items-end gap-8 mb-4">
+                      <div>
+                        <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'rgba(26,26,26,0.35)' }}>{EN ? 'Your unit' : 'Tu unidad'}</p>
+                        <p className="font-serif text-4xl font-light" style={{ color: '#0E6845' }}>{fmtUsd(unitRevpar)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'rgba(26,26,26,0.35)' }}>{EN ? 'Market' : 'Mercado'}</p>
+                        <p className="font-serif text-4xl font-light" style={{ color: '#0080C6' }}>{fmtUsd(marketRevpar)}</p>
+                      </div>
+                      <div className="pb-1">
+                        <p className="font-serif text-2xl font-light" style={{ color: unitRevpar >= marketRevpar ? '#0E6845' : '#833B0E' }}>
+                          {(unitRevpar / marketRevpar).toFixed(1)}×
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-xs leading-relaxed" style={{ color: 'rgba(26,26,26,0.35)' }}>
+                      {EN
+                        ? 'RevPar blends rate AND occupancy into one number — the cleanest measure of how hard your unit is working. Market value includes fees and is approximate.'
+                        : 'El RevPar combina tarifa Y ocupación en un solo número — la medida más limpia de cuánto está trabajando tu unidad. El valor del mercado incluye fees y es aproximado.'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Strategy */}
             <div>
@@ -691,6 +803,65 @@ export default async function RevenuePage({ params }: Props) {
                 </div>
               </div>
             )}
+
+            {/* Listing health + refer another property */}
+            <div className="grid lg:grid-cols-2 gap-4 items-stretch">
+              {health && (
+                <div className="rounded-2xl p-6 nok-card">
+                  <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-1">{EN ? 'Listing health' : 'Salud de tu listing'}</h2>
+                  <div className="flex items-end gap-3 my-3">
+                    <p className="font-serif text-5xl font-light" style={{ color: health.score >= 75 ? '#0E6845' : health.score >= 50 ? '#D6A700' : '#833B0E' }}>{health.score}</p>
+                    <p className="text-sm pb-1" style={{ color: 'rgba(26,26,26,0.45)' }}>/ 100</p>
+                  </div>
+                  <div className="space-y-2.5">
+                    {health.parts.map(p => {
+                      const LABELS: Record<string, [string, string]> = {
+                        rating: ['Calificación de huéspedes', 'Guest rating'],
+                        reviews: ['Cantidad de reseñas', 'Review count'],
+                        photos: ['Fotos del listing', 'Listing photos'],
+                        amenities: ['Amenidades publicadas', 'Published amenities'],
+                      }
+                      return (
+                        <div key={p.key} className="grid items-center gap-3" style={{ gridTemplateColumns: '180px 1fr 48px' }}>
+                          <span className="text-xs" style={{ color: 'rgba(26,26,26,0.5)' }}>{EN ? LABELS[p.key][1] : LABELS[p.key][0]} · {p.value}</span>
+                          <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(26,26,26,0.05)' }}>
+                            <div className="h-full rounded-full" style={{ width: `${Math.round((p.score / p.max) * 100)}%`, backgroundColor: p.ok ? '#0E6845' : '#D6A700' }} />
+                          </div>
+                          <span className="text-xs text-right tabular-nums" style={{ color: 'rgba(26,26,26,0.4)' }}>{p.score}/{p.max}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <p className="text-xs mt-4 leading-relaxed" style={{ color: 'rgba(26,26,26,0.35)' }}>
+                    {EN
+                      ? 'A stronger listing ranks higher and converts better. The NOK team works on the yellow bars.'
+                      : 'Un listing más fuerte posiciona mejor y convierte más. El equipo NOK trabaja sobre las barras amarillas.'}
+                  </p>
+                </div>
+              )}
+              <div className="rounded-2xl p-6 nok-card flex flex-col justify-between" style={{ backgroundColor: '#0E6845' }}>
+                <div>
+                  <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                    {EN ? 'Grow with NOK' : 'Crece con NOK'}
+                  </p>
+                  <h2 className="font-serif text-2xl font-light text-white mb-2">{EN ? 'Do you own another property?' : '¿Tienes otra propiedad?'}</h2>
+                  <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.75)' }}>
+                    {EN
+                      ? 'Estimate in one minute how much it could earn with the same engine and team behind this unit.'
+                      : 'Calcula en un minuto cuánto podría producir con el mismo motor y equipo que trabajan detrás de esta unidad.'}
+                  </p>
+                </div>
+                <a
+                  href="https://nok-property-calculator.vercel.app"
+                  target="_blank"
+                  rel="noopener"
+                  className="inline-block mt-5 px-5 py-2.5 rounded-xl text-sm font-semibold self-start"
+                  style={{ backgroundColor: '#FFFFFF', color: '#0E6845' }}
+                >
+                  {EN ? 'Estimate its revenue →' : 'Calcular su producción →'}
+                </a>
+              </div>
+            </div>
 
             {/* Methodology note */}
             <p className="text-xs leading-relaxed" style={{ color: 'rgba(26,26,26,0.3)' }}>

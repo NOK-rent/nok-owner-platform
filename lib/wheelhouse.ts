@@ -591,3 +591,42 @@ export async function previewPositioning(listingId: string, channel: WheelhouseC
     return null
   }
 }
+
+// ── FX export, market RevPar, listing quality ───────────────────────────────
+
+/** Convert an amount in DOP/COP/USD to USD (daily rate, cached 24h). */
+export async function fxToUSD(amount: number, currency: string): Promise<number> {
+  return toUSD(amount, currency)
+}
+
+/** Market RevPar (with fees) over the trailing 90 days, in USD. */
+export async function getMarketRevpar90(listingId: string, channel: WheelhouseChannel = 'guesty'): Promise<number | null> {
+  const { marketId, beds } = await listingMeta(listingId, channel)
+  if (marketId == null) return null
+  const end = new Date().toISOString().slice(0, 10)
+  const start = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10)
+  const ts = await whFetch<any>(`/market_report/${marketId}/time_series?metrics=revpar_w_fees&start_date=${start}&end_date=${end}${beds ? `&bedrooms=${beds}` : ''}`)
+  const vals = (ts?.data ?? []).map((d: any) => d.revpar_w_fees).filter((v: any) => typeof v === 'number')
+  if (!vals.length) return null
+  const mean = vals.reduce((a: number, b: number) => a + b, 0) / vals.length
+  return await toUSD(mean, ts?.currency ?? 'USD')
+}
+
+export interface ListingQuality {
+  numPhotos: number | null
+  numReviews: number | null
+  starRating: number | null
+  amenitiesCount: number | null
+}
+
+/** Listing quality raw signals from the channel listing. */
+export async function getListingQuality(listingId: string, channel: WheelhouseChannel = 'guesty'): Promise<ListingQuality | null> {
+  const l = await whFetch<any>(`/listings/${listingId}?channel=${channel}`)
+  if (!l) return null
+  return {
+    numPhotos: typeof l.num_photos === 'number' ? l.num_photos : null,
+    numReviews: typeof l.num_reviews === 'number' ? l.num_reviews : null,
+    starRating: typeof l.star_rating === 'number' ? l.star_rating : null,
+    amenitiesCount: Array.isArray(l.amenities) ? l.amenities.length : null,
+  }
+}
