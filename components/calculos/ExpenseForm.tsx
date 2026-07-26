@@ -24,6 +24,7 @@ const inputStyle: React.CSSProperties = {
 export function AddExpenseForm({ propertyId, monthKey }: { propertyId: string; monthKey: string }) {
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [freq, setFreq] = useState('monthly')
   const formRef = useRef<HTMLFormElement>(null)
 
   function onSubmit(formData: FormData) {
@@ -32,6 +33,7 @@ export function AddExpenseForm({ propertyId, monthKey }: { propertyId: string; m
       try {
         await addExpense(propertyId, formData)
         formRef.current?.reset()
+        setFreq('monthly')
       } catch {
         setError('No se pudo guardar el gasto. Revisa los datos e intenta de nuevo.')
       }
@@ -71,7 +73,7 @@ export function AddExpenseForm({ propertyId, monthKey }: { propertyId: string; m
             <option value="DOP">DOP</option>
           </select>
         </div>
-        <select name="frequency" className="px-3 py-2 rounded-lg text-sm outline-none cursor-pointer" style={inputStyle} defaultValue="monthly">
+        <select name="frequency" value={freq} onChange={e => setFreq(e.target.value)} className="px-3 py-2 rounded-lg text-sm outline-none cursor-pointer" style={inputStyle}>
           <option value="monthly">Cada mes</option>
           <option value="one_time">Solo este mes</option>
         </select>
@@ -83,6 +85,23 @@ export function AddExpenseForm({ propertyId, monthKey }: { propertyId: string; m
         >
           {pending ? 'Guardando…' : '+ Agregar'}
         </button>
+      </div>
+
+      {/* Vigencia — el owner designa desde/hasta qué mes aplica */}
+      <div className="flex flex-wrap items-center gap-2 mt-2">
+        <label className="text-[11px] flex items-center gap-1.5" style={{ color: 'rgba(26,26,26,0.5)' }}>
+          Desde
+          <input type="month" name="start_month" defaultValue={monthKey} className="px-2 py-1 rounded-lg text-xs outline-none" style={inputStyle} />
+        </label>
+        {freq === 'monthly' && (
+          <label className="text-[11px] flex items-center gap-1.5" style={{ color: 'rgba(26,26,26,0.5)' }}>
+            Hasta (opcional)
+            <input type="month" name="end_month" min={monthKey} className="px-2 py-1 rounded-lg text-xs outline-none" style={inputStyle} />
+          </label>
+        )}
+        <span className="text-[11px]" style={{ color: 'rgba(26,26,26,0.35)' }}>
+          {freq === 'monthly' ? 'Se descuenta cada mes en el rango que elijas (sin “hasta” = permanente).' : 'Se descuenta solo en el mes “desde”.'}
+        </span>
       </div>
       {error && <p className="mt-2 text-xs" style={{ color: '#F20022' }}>{error}</p>}
     </form>

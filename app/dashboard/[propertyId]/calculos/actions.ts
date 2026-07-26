@@ -47,12 +47,24 @@ export async function addExpense(propertyId: string, formData: FormData) {
   const amount = Number(formData.get('amount') || 0)
   const currency = (['USD', 'DOP', 'COP'].includes(String(formData.get('currency'))) ? formData.get('currency') : 'USD') as Currency
   const frequency = (formData.get('frequency') === 'one_time' ? 'one_time' : 'monthly') as Frequency
-  const monthKey = String(formData.get('month') || '').trim() // YYYY-MM del mes que está viendo
+  const monthKey = String(formData.get('month') || '').trim()       // YYYY-MM del mes visible (fallback)
+  const startMonth = String(formData.get('start_month') || '').trim() // "desde" que designa el owner
+  const endMonth = String(formData.get('end_month') || '').trim()     // "hasta" opcional
 
   if (!label || !(amount > 0)) throw new Error('label and amount required')
 
-  // one_time queda anclado al mes visible; monthly arranca ese mes
-  const startDate = /^\d{4}-\d{2}$/.test(monthKey) ? `${monthKey}-01` : new Date().toISOString().slice(0, 10)
+  // Mes de inicio: el que designa el owner, o el mes visible, o hoy.
+  const baseMonth = /^\d{4}-\d{2}$/.test(startMonth) ? startMonth
+    : /^\d{4}-\d{2}$/.test(monthKey) ? monthKey
+    : new Date().toISOString().slice(0, 7)
+  const startDate = `${baseMonth}-01`
+
+  // "hasta": último día del mes designado (solo aplica a gastos mensuales; one_time es un solo mes)
+  let endDate: string | null = null
+  if (frequency === 'monthly' && /^\d{4}-\d{2}$/.test(endMonth) && endMonth >= baseMonth) {
+    const [ey, em] = endMonth.split('-').map(Number)
+    endDate = `${endMonth}-${String(new Date(ey, em, 0).getDate()).padStart(2, '0')}`
+  }
 
   const { error } = await sb.from('owner_costs').insert({
     property_id: propertyId,
@@ -63,6 +75,7 @@ export async function addExpense(propertyId: string, formData: FormData) {
     currency,
     frequency,
     start_date: startDate,
+    end_date: endDate,
   })
   if (error) throw error
   revalidate(propertyId)

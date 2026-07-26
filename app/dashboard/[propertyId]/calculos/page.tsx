@@ -53,6 +53,33 @@ export default async function CalculosPage({ params, searchParams }: Props) {
   const statement = await getMonthlyStatement(sb, property, selectedMonthKey)
   const label = monthLabel(selectedMonthKey)
 
+  // TODOS los gastos guardados del inmueble (no solo los del mes visible) — así el
+  // owner siempre los ve y nunca parecen "borrados" al cambiar de mes o re-entrar.
+  const { data: allCostsRaw } = await sb
+    .from('owner_costs')
+    .select('id, label, category, amount, currency, frequency, start_date, end_date')
+    .eq('property_id', propertyId)
+    .order('created_at', { ascending: false })
+    .then((r: any) => r, () => ({ data: [] }))
+  const MES_CORTO = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+  const mLabel = (iso: string) => { const [y, m] = iso.slice(0, 7).split('-'); return `${MES_CORTO[+m - 1]} ${y}` }
+  const [selY, selM] = selectedMonthKey.split('-').map(Number)
+  const selStart = new Date(selY, selM - 1, 1)
+  const selEnd = new Date(selY, selM, 0)
+  const savedExpenses = (allCostsRaw ?? []).map((c: any) => {
+    const start = new Date(c.start_date + 'T00:00:00')
+    const end = c.end_date ? new Date(c.end_date + 'T00:00:00') : null
+    const appliesThisMonth = c.frequency === 'one_time'
+      ? (start >= selStart && start <= selEnd)
+      : (start <= selEnd && (!end || end >= selStart))
+    const scope = c.frequency === 'one_time'
+      ? `solo ${mLabel(c.start_date)}`
+      : end
+        ? `cada mes · ${mLabel(c.start_date)} → ${mLabel(c.end_date)}`
+        : `cada mes desde ${mLabel(c.start_date)}`
+    return { ...c, appliesThisMonth, scope }
+  })
+
   const publishedChannels = CHANNEL_META
     .map(c => ({ ...c, url: (property as any)[c.key] as string | null }))
     .filter(c => c.url && c.url.trim())
@@ -129,27 +156,32 @@ export default async function CalculosPage({ params, searchParams }: Props) {
               <span className="text-sm font-semibold" style={{ color: '#F20022' }}>−{fmt(statement.ownerExpensesTotal)}</span>
             </div>
             <p className="text-xs mt-1" style={{ color: 'rgba(26,26,26,0.4)' }}>
-              Administración, banco, seguro… lo que pagas por fuera de NOK. Solo tú los ves; no afectan tu liquidación NOK.
+              Administración, banco, seguro… lo que pagas por fuera de NOK. Quedan guardados permanentemente para los meses que designes. Solo tú los ves; no afectan tu liquidación NOK.
             </p>
 
-            {statement.ownerExpenses.length > 0 && (
+            {savedExpenses.length > 0 && (
               <div className="mt-4">
-                {statement.ownerExpenses.map(e => (
-                  <div key={e.id} className="flex items-center justify-between py-2.5" style={{ borderBottom: '1px solid rgba(26,26,26,0.06)' }}>
+                {savedExpenses.map((e: typeof savedExpenses[number]) => (
+                  <div key={e.id} className="flex items-center justify-between py-2.5" style={{ borderBottom: '1px solid rgba(26,26,26,0.06)', opacity: e.appliesThisMonth ? 1 : 0.5 }}>
                     <div className="min-w-0">
                       <p className="text-sm text-[#1A1A1A] truncate">{e.label}</p>
                       <p className="text-[11px]" style={{ color: 'rgba(26,26,26,0.4)' }}>
-                        {EXPENSE_CATEGORY_LABELS[e.category ?? 'other'] ?? 'Otro'}
-                        {e.frequency === 'monthly' ? ' · cada mes' : ' · solo este mes'}
-                        {e.currency !== 'USD' ? ` · ${e.amountOriginal.toLocaleString('en-US')} ${e.currency}` : ''}
+                        {EXPENSE_CATEGORY_LABELS[e.category ?? 'other'] ?? 'Otro'} · {e.scope}
+                        {e.currency !== 'USD' ? ` · ${Number(e.amount).toLocaleString('en-US')} ${e.currency}` : ''}
+                        {!e.appliesThisMonth ? ` · no aplica a ${label.toLowerCase()}` : ''}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-sm font-medium" style={{ color: '#F20022' }}>−{fmt(e.amountUSD)}</span>
+                      <span className="text-sm font-medium" style={{ color: e.appliesThisMonth ? '#F20022' : 'rgba(26,26,26,0.3)' }}>
+                        {e.appliesThisMonth ? '−' : ''}{e.currency === 'USD' ? fmt(Number(e.amount)) : `${Number(e.amount).toLocaleString('en-US')} ${e.currency}`}
+                      </span>
                       <RemoveExpenseButton propertyId={propertyId} costId={e.id} />
                     </div>
                   </div>
                 ))}
+                <p className="text-[11px] mt-2" style={{ color: 'rgba(26,26,26,0.35)' }}>
+                  Los gastos en gris no aplican al mes que estás viendo, pero siguen guardados para sus meses.
+                </p>
               </div>
             )}
 
