@@ -103,6 +103,7 @@ export async function GET(req: Request) {
       : `[PREVIEW → ${o.email}] Buenas noticias de tus propiedades · NOK`
     const ok = await sendEmail(live ? o.email : PREVIEW_TO, subject, html)
     if (ok) sent++
+    await new Promise(r => setTimeout(r, 600)) // Resend allows ~2 req/s
   }
 
   return NextResponse.json({ live, ownersWithNews: byOwner.size, sent })
