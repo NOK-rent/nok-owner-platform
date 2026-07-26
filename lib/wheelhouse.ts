@@ -108,6 +108,7 @@ export interface RevenueSnapshot {
   autoPosting: boolean
   // ── deep insights ──
   basePrice: BasePriceBreakdown | null
+  basePriceAdjustmentPct: number | null // e.g. -10 = publishing 10% below recommendation
   demandSensitivityPct: number | null
   pacingAdjusted: boolean
   historicalAnchoringPct: number | null
@@ -417,6 +418,9 @@ export async function getRevenueSnapshot(guestyListingId: string, channel: Wheel
     bookings30: typeof kpis?.bookings?.['0_30'] === 'number' ? kpis.bookings['0_30'] : null,
     zoneOccDaily,
     marketPosition,
+    basePriceAdjustmentPct: typeof prefs?.base_price_adjustment === 'number'
+      ? Math.round((prefs.base_price_adjustment - 1) * 100)
+      : null,
   }
 }
 
@@ -454,4 +458,136 @@ export async function getLastPostedMap(listingId: string, channel: WheelhouseCha
     if (r?.stay_date && typeof r?.last_posted_price === 'number') map[r.stay_date] = r.last_posted_price
   }
   return map
+}
+
+// ── Year vs market, seasonality curve, lead time, what-if preview ───────────
+
+export interface YearVsMarketMonth {
+  month: string          // YYYY-MM
+  unit: number | null    // occupancy_adjusted 0..1
+  market: number | null  // occupancy_adjusted 0..1
+}
+
+async function listingMeta(listingId: string, channel: WheelhouseChannel) {
+  const listing = await whFetch<any>(`/listings/${listingId}?channel=${channel}`)
+  const marketId = typeof listing?.market_id === 'number' ? listing.market_id : null
+  const beds = typeof listing?.num_bedrooms === 'number' ? (listing.num_bedrooms >= 4 ? '4%2B' : String(listing.num_bedrooms)) : null
+  return { marketId, beds }
+}
+
+/** Trailing 12 months: unit occupancy vs market occupancy (same bedroom count). */
+export async function getYearVsMarket(listingId: string, channel: WheelhouseChannel = 'guesty'): Promise<YearVsMarketMonth[]> {
+  const { marketId, beds } = await listingMeta(listingId, channel)
+  const now = new Date()
+  const start = new Date(now.getFullYear(), now.getMonth() - 11, 1)
+  const startISO = start.toISOString().slice(0, 10)
+  const endISO = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10)
+
+  const [monthly, ts] = await Promise.all([
+    whFetch<any>(`/listings/${listingId}/kpis/monthly?channel=${channel}`),
+    marketId != null
+      ? whFetch<any>(`/market_report/${marketId}/time_series?metrics=occupancy_adjusted&start_date=${startISO}&end_date=${endISO}${beds ? `&bedrooms=${beds}` : ''}`)
+      : Promise.resolve(null),
+  ])
+
+  const unitByMonth = new Map<string, number>()
+  for (const m of monthly?.data ?? []) {
+    const key = (m.month ?? '').slice(0, 7)
+    if (typeof m.occupancy_adjusted === 'number') unitByMonth.set(key, m.occupancy_adjusted)
+  }
+  const mktAgg = new Map<string, { sum: number; n: number }>()
+  for (const d of ts?.data ?? []) {
+    const key = (d.stay_date ?? '').slice(0, 7)
+    if (typeof d.occupancy_adjusted === 'number') {
+      const cur = mktAgg.get(key) ?? { sum: 0, n: 0 }
+      cur.sum += d.occupancy_adjusted; cur.n++
+      mktAgg.set(key, cur)
+    }
+  }
+
+  const out: YearVsMarketMonth[] = []
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - 11 + i, 1)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const mkt = mktAgg.get(key)
+    out.push({ month: key, unit: unitByMonth.get(key) ?? null, market: mkt ? mkt.sum / mkt.n : null })
+  }
+  // Months before the unit's first activity report 0% — that's pre-onboarding,
+  // not underperformance. Hide the unit bar for that leading stretch.
+  for (const m of out) {
+    if (m.unit === 0) m.unit = null
+    else if (m.unit != null && m.unit > 0) break
+  }
+  return out
+}
+
+/** The unit's applied 12-month seasonality curve (custom if set, else recommended). */
+export async function getSeasonalityCurve(listingId: string, channel: WheelhouseChannel = 'guesty'): Promise<{ month: number; factor: number }[]> {
+  const prefs = await whFetch<any>(`/preferences/${listingId}?channel=${channel}`)
+  const adj = prefs?.seasonality_adjustment
+  if (adj?.type === 'CUS' && Array.isArray(adj.rules)) {
+    const monthly = adj.rules.filter((r: any) => r.type === 'monthly' && Array.isArray(r.months) && typeof r.value === 'number')
+    if (monthly.length >= 6) {
+      return monthly
+        .map((r: any) => ({ month: r.months[0] as number, factor: r.value as number }))
+        .sort((a: any, b: any) => a.month - b.month)
+    }
+  }
+  const rec = await whFetch<any>(`/listings/${listingId}/monthly_seasonality?channel=${channel}`)
+  const curve = rec?.REC ?? rec?.CON
+  if (curve && typeof curve === 'object') {
+    return Object.entries(curve)
+      .map(([m, f]) => ({ month: Number(m), factor: f as number }))
+      .filter(x => x.month >= 1 && x.month <= 12 && typeof x.factor === 'number')
+      .sort((a, b) => a.month - b.month)
+  }
+  return []
+}
+
+/** Median booking anticipation (days) in the unit's market, last 90 days. */
+export async function getMarketLeadTime(listingId: string, channel: WheelhouseChannel = 'guesty'): Promise<number | null> {
+  const { marketId, beds } = await listingMeta(listingId, channel)
+  if (marketId == null) return null
+  const end = new Date().toISOString().slice(0, 10)
+  const start = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10)
+  const ts = await whFetch<any>(`/market_report/${marketId}/time_series?metrics=lead_time&start_date=${start}&end_date=${end}${beds ? `&bedrooms=${beds}` : ''}`)
+  const vals = (ts?.data ?? []).map((d: any) => d.lead_time).filter((v: any) => typeof v === 'number').map((v: number) => Math.abs(v)).sort((a: number, b: number) => a - b)
+  if (!vals.length) return null
+  return Math.round(vals[Math.floor(vals.length / 2)])
+}
+
+/** What-if: preview price recommendations under a different positioning. */
+export async function previewPositioning(listingId: string, channel: WheelhouseChannel, adjustmentPct: number): Promise<{
+  days: { date: string; current: number; simulated: number }[]
+  avgCurrent: number
+  avgSimulated: number
+} | null> {
+  if (!KEY) return null
+  const adjustment = 1 + adjustmentPct / 100
+  try {
+    const [curRes, simRes] = await Promise.all([
+      fetch(`${BASE}/listings/${listingId}/price_recommendations?channel=${channel}`, {
+        headers: { 'X-Integration-Api-Key': KEY }, next: { revalidate: 60 * 60 },
+      }),
+      fetch(`${BASE}/preferences/${listingId}/preview?channel=${channel}`, {
+        method: 'POST',
+        headers: { 'X-Integration-Api-Key': KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base_price_adjustment: Math.round(adjustment * 100) / 100 }),
+        cache: 'no-store',
+      }),
+    ])
+    if (!curRes.ok || !simRes.ok) return null
+    const cur = await curRes.json()
+    const sim = await simRes.json()
+    const simByDate = new Map<string, number>((sim?.data ?? []).map((r: any) => [r.stay_date, r.price]))
+    const days = (cur?.data ?? [])
+      .slice(0, 90)
+      .filter((r: any) => typeof r.price === 'number' && typeof simByDate.get(r.stay_date) === 'number')
+      .map((r: any) => ({ date: r.stay_date as string, current: r.price as number, simulated: simByDate.get(r.stay_date) as number }))
+    if (days.length < 7) return null
+    const avg = (k: 'current' | 'simulated') => Math.round(days.reduce((s: number, d: any) => s + d[k], 0) / days.length)
+    return { days, avgCurrent: avg('current'), avgSimulated: avg('simulated') }
+  } catch {
+    return null
+  }
 }

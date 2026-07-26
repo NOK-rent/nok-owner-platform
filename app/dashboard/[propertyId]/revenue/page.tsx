@@ -2,11 +2,14 @@ import { notFound } from 'next/navigation'
 import { loadOwnerProperty } from '@/lib/admin'
 import {
   getRevenueSnapshot, resolveWheelhouseRef, getBasePriceHistory, getPostingCount,
+  getYearVsMarket, getSeasonalityCurve, getMarketLeadTime,
   type OccWindow, type BasePriceBreakdown, type SeasonRange, type MarketPosition, type BasePriceHistoryPoint,
+  type YearVsMarketMonth,
 } from '@/lib/wheelhouse'
 import { getLocale } from '@/lib/i18n'
 import { snapshotToEnglish, FLAG_EN } from '@/lib/strategy-i18n'
 import { RateChartInteractive, OccDailyChartInteractive } from '@/components/dashboard/StrategyCharts'
+import { StrategySimulator, YearVsMarketChart } from '@/components/dashboard/StrategySimulator'
 
 interface Props {
   params: Promise<{ propertyId: string }>
@@ -143,6 +146,37 @@ function BaseBreakdown({ bp }: { bp: BasePriceBreakdown }) {
   )
 }
 
+/** 12-month seasonality curve (server-rendered) */
+function SeasonalityCurve({ curve, en }: { curve: { month: number; factor: number }[]; en: boolean }) {
+  if (curve.length < 6) return null
+  const W = 420, H = 170, P = { t: 14, r: 10, b: 22, l: 40 }
+  const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  const fs = curve.map(c => c.factor)
+  const fMin = Math.min(...fs, 0.95), fMax = Math.max(...fs, 1.05)
+  const x = (i: number) => P.l + (i * (W - P.l - P.r)) / (curve.length - 1)
+  const y = (f: number) => P.t + (H - P.t - P.b) * (1 - (f - fMin) / (fMax - fMin || 1))
+  const line = curve.map((c, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(c.factor).toFixed(1)}`).join('')
+  const peakI = fs.indexOf(Math.max(...fs))
+  const lowI = fs.indexOf(Math.min(...fs))
+  const pctLabel = (f: number) => `${f >= 1 ? '+' : ''}${Math.round((f - 1) * 100)}%`
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label={en ? 'Seasonality curve by month' : 'Curva de temporada por mes'}>
+      <line x1={P.l} x2={W - P.r} y1={y(1)} y2={y(1)} stroke="rgba(26,26,26,0.15)" strokeWidth={1} strokeDasharray="3 3" />
+      <text x={P.l - 6} y={y(1) + 4} textAnchor="end" fontSize={10} fill="rgba(26,26,26,0.35)">0%</text>
+      <path d={line} fill="none" stroke="#0E6845" strokeWidth={2.2} strokeLinejoin="round" />
+      {curve.map((c, i) => (
+        <g key={c.month}>
+          <circle cx={x(i)} cy={y(c.factor)} r={i === peakI || i === lowI ? 4 : 2.5} fill={i === peakI ? '#0E6845' : i === lowI ? '#833B0E' : 'rgba(14,104,69,0.5)'} />
+          <text x={x(i)} y={H - 6} textAnchor="middle" fontSize={10} fill="rgba(26,26,26,0.35)">{en ? MONTHS[c.month - 1] : MESES[c.month - 1]}</text>
+        </g>
+      ))}
+      <text x={x(peakI)} y={y(curve[peakI].factor) - 8} textAnchor="middle" fontSize={11} fill="#0E6845" fontWeight={600}>{pctLabel(curve[peakI].factor)}</text>
+      <text x={x(lowI)} y={y(curve[lowI].factor) + 16} textAnchor="middle" fontSize={11} fill="#833B0E" fontWeight={600}>{pctLabel(curve[lowI].factor)}</text>
+    </svg>
+  )
+}
+
 const MESES_LARGOS = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
 function fmtRange(s: SeasonRange, en: boolean) {
   const f = (iso: string) => {
@@ -200,13 +234,16 @@ export default async function RevenuePage({ params }: Props) {
   const EN = locale === 'en'
 
   const whRef = resolveWheelhouseRef(property)
-  const [snapEs, baseHistory, postingCount7d] = whRef
+  const [snapEs, baseHistory, postingCount7d, yearVsMarket, seasonCurve, leadTime] = whRef
     ? await Promise.all([
         getRevenueSnapshot(whRef.id, whRef.channel),
         getBasePriceHistory(whRef.id, whRef.channel),
         getPostingCount(whRef.id, whRef.channel, 7),
+        getYearVsMarket(whRef.id, whRef.channel),
+        getSeasonalityCurve(whRef.id, whRef.channel),
+        getMarketLeadTime(whRef.id, whRef.channel),
       ])
-    : [null, [] as BasePriceHistoryPoint[], null]
+    : [null, [] as BasePriceHistoryPoint[], null, [] as YearVsMarketMonth[], [] as { month: number; factor: number }[], null]
   const snap = snapEs && EN ? snapshotToEnglish(snapEs) : snapEs
 
   // Recent rate-change events recorded by the rate-watch cron
@@ -559,6 +596,61 @@ export default async function RevenuePage({ params }: Props) {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Year vs market */}
+            {yearVsMarket.some(m => m.unit != null && m.market != null) && (
+              <div className="rounded-2xl p-6 nok-card">
+                <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-1">{EN ? 'Your year vs. the market' : 'Tu año vs. el mercado'}</h2>
+                <p className="text-sm mb-4" style={{ color: 'rgba(26,26,26,0.45)' }}>
+                  {EN
+                    ? 'Monthly occupancy over the last 12 months: your unit against the whole market for the same bedroom count. Low months are usually the market, not the unit.'
+                    : 'Ocupación mensual de los últimos 12 meses: tu unidad contra todo el mercado con el mismo número de habitaciones. Los meses flojos suelen ser del mercado, no de la unidad.'}
+                </p>
+                <YearVsMarketChart months={yearVsMarket} en={EN} />
+              </div>
+            )}
+
+            {/* Seasonality curve + market lead time */}
+            {(seasonCurve.length >= 6 || leadTime != null) && (
+              <div className="grid lg:grid-cols-2 gap-4 items-start">
+                {seasonCurve.length >= 6 && (
+                  <div className="rounded-2xl p-6 nok-card">
+                    <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-1">{EN ? 'Your seasonality curve' : 'Tu curva de temporada'}</h2>
+                    <p className="text-sm mb-4" style={{ color: 'rgba(26,26,26,0.45)' }}>
+                      {EN
+                        ? 'How much the base price is adjusted each month, calibrated to your market. Above the line = premium months, below = occupancy months.'
+                        : 'Cuánto se ajusta el precio base cada mes, calibrado a tu mercado. Encima de la línea = meses premium, debajo = meses de ocupación.'}
+                    </p>
+                    <SeasonalityCurve curve={seasonCurve} en={EN} />
+                  </div>
+                )}
+                {leadTime != null && (
+                  <div className="rounded-2xl p-6 nok-card">
+                    <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-1">{EN ? 'When does your market book?' : '¿Con cuánta anticipación reserva tu mercado?'}</h2>
+                    <div className="flex items-end gap-4 my-4">
+                      <p className="font-serif text-6xl font-light" style={{ color: '#0E6845' }}>{leadTime}</p>
+                      <p className="text-sm pb-2" style={{ color: 'rgba(26,26,26,0.45)' }}>{EN ? 'days ahead (median, last 90 days)' : 'días de anticipación (mediana, últimos 90 días)'}</p>
+                    </div>
+                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(26,26,26,0.6)' }}>
+                      {EN
+                        ? `Half of the bookings in your market are made ${leadTime} days or less before check-in. That's why a month that looks empty today usually fills closer to the date — the engine holds rate and captures those bookings when they come.`
+                        : `La mitad de las reservas de tu mercado se hacen con ${leadTime} días o menos de anticipación. Por eso un mes que hoy se ve vacío normalmente se llena más cerca de la fecha — el motor sostiene la tarifa y captura esas reservas cuando llegan.`}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* What-if simulator */}
+            <div className="rounded-2xl p-6 nok-card">
+              <h2 className="font-serif text-2xl font-light text-[#1A1A1A] mb-1">{EN ? 'What if we changed the positioning?' : '¿Qué pasaría si cambiamos el posicionamiento?'}</h2>
+              <p className="text-sm mb-5" style={{ color: 'rgba(26,26,26,0.45)' }}>
+                {EN
+                  ? 'Play with the strategy: move the slider and see how the next 90 nights of recommendations would change. Nothing is applied — it is a sandbox.'
+                  : 'Juega con la estrategia: mueve el slider y mira cómo cambiarían las recomendaciones de las próximas 90 noches. No se aplica nada — es un sandbox.'}
+              </p>
+              <StrategySimulator propertyId={propertyId} currentPct={snap.basePriceAdjustmentPct ?? 0} en={EN} />
             </div>
 
             {/* Insights */}
