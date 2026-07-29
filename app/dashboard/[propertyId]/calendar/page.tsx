@@ -44,6 +44,16 @@ export default async function CalendarPage({ params, searchParams }: Props) {
       .order('calendar_date'),
   ])
 
+  // Bloqueos del propietario que tocan el mes visible
+  const { data: ownerBlocks } = await sb
+    .from('owner_calendar_blocks')
+    .select('id, start_date, end_date, para, huesped_nombre, hora_llegada, hora_salida')
+    .eq('property_id', propertyId)
+    .eq('estado', 'activo')
+    .lte('start_date', to)
+    .gte('end_date', from)
+    .then((r: any) => r, () => ({ data: [] }))
+
   return (
     <div className="px-8 lg:px-16 py-10 max-w-6xl">
       <div className="flex items-center justify-between mb-8">
@@ -60,6 +70,7 @@ export default async function CalendarPage({ params, searchParams }: Props) {
         month={displayMonth}
         reservations={reservationsRes.data ?? []}
         pricing={pricingRes.data ?? []}
+        ownerBlocks={ownerBlocks ?? []}
       />
     </div>
   )

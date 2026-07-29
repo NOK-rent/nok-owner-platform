@@ -29,12 +29,23 @@ interface PricingDay {
   currency: string | null
 }
 
+interface OwnerBlock {
+  id: string
+  start_date: string
+  end_date: string
+  para: string
+  huesped_nombre: string | null
+  hora_llegada: string | null
+  hora_salida: string | null
+}
+
 interface CalendarViewProps {
   propertyId: string
   year: number
   month: number
   reservations: Reservation[]
   pricing: PricingDay[]
+  ownerBlocks?: OwnerBlock[]
 }
 
 const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
@@ -74,9 +85,55 @@ function fmt(amount: number | null, currency = 'USD') {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount)
 }
 
-export default function CalendarView({ propertyId, year, month, reservations, pricing }: CalendarViewProps) {
+export default function CalendarView({ propertyId, year, month, reservations, pricing, ownerBlocks = [] }: CalendarViewProps) {
   const router = useRouter()
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
+
+  // ── Bloqueo de fechas por el propietario ──
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const [showBlock, setShowBlock] = useState(false)
+  const [blockForm, setBlockForm] = useState({ startDate: '', endDate: '', para: 'propietario', huespedNombre: '', horaLlegada: '15:00', horaSalida: '11:00' })
+  const [blocking, setBlocking] = useState(false)
+  const [blockError, setBlockError] = useState<string | null>(null)
+
+  // set de días bloqueados (para pintar en el grid)
+  const blockedDays = new Set<string>()
+  for (const b of ownerBlocks) {
+    const s = new Date(b.start_date + 'T00:00:00'), e = new Date(b.end_date + 'T00:00:00')
+    for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) blockedDays.add(d.toISOString().slice(0, 10))
+  }
+
+  function reservationOverlaps(start: string, end: string): Reservation | null {
+    // una reserva ocupa check_in..check_out-1
+    return reservations.find(r => r.check_in <= end && r.check_out > start) ?? null
+  }
+
+  async function submitBlock() {
+    setBlockError(null)
+    const { startDate, endDate } = blockForm
+    if (!startDate || !endDate) { setBlockError('Elige la fecha de inicio y de fin.'); return }
+    if (endDate < startDate) { setBlockError('La fecha de fin no puede ser antes del inicio.'); return }
+    if (startDate < todayStr) { setBlockError('No puedes bloquear fechas pasadas.'); return }
+    const clash = reservationOverlaps(startDate, endDate)
+    if (clash) { setBlockError(`Ya hay una reserva (${clash.guest_name || 'huésped'}, ${clash.check_in} → ${clash.check_out}) en esas fechas. No se puede bloquear.`); return }
+    setBlocking(true)
+    try {
+      const res = await fetch('/api/calendar/block', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ propertyId, ...blockForm }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setBlockError(data.error || 'No se pudo bloquear.'); return }
+      setShowBlock(false)
+      setBlockForm({ startDate: '', endDate: '', para: 'propietario', huespedNombre: '', horaLlegada: '15:00', horaSalida: '11:00' })
+      router.refresh()
+    } catch {
+      setBlockError('Error de red. Intenta de nuevo.')
+    } finally {
+      setBlocking(false)
+    }
+  }
 
   // Maps
   const pricingMap = new Map<string, PricingDay>()
@@ -128,6 +185,20 @@ export default function CalendarView({ propertyId, year, month, reservations, pr
 
   return (
     <div>
+      {/* Acción: bloquear fechas */}
+      <div className="flex justify-end mb-4">
+        <button
+          onClick={() => { setBlockError(null); setShowBlock(true) }}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all"
+          style={{ backgroundColor: '#1A1A1A', color: '#FFFFFF' }}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+          Bloquear fechas
+        </button>
+      </div>
+
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         {[
@@ -229,13 +300,14 @@ export default function CalendarView({ propertyId, year, month, reservations, pr
                     const price = pricingMap.get(date)
                     const isToday = date === today
                     const isPast = date < today
+                    const isOwnerBlocked = !reservation && blockedDays.has(date)
                     const channelStyle = reservation ? getChannelStyle(reservation.channel) : DEFAULT_CHANNEL
                     return (
                       <div key={date} className="min-h-[96px] p-1.5 flex flex-col"
                         style={{
                           borderRight: '1px solid rgba(26,26,26,0.04)',
                           borderBottom: '1px solid rgba(26,26,26,0.04)',
-                          backgroundColor: reservation ? channelStyle.bg : isPast ? '#E9E7E2' : '#FFFFFF',
+                          backgroundColor: reservation ? channelStyle.bg : isOwnerBlocked ? 'rgba(131,59,14,0.08)' : isPast ? '#E9E7E2' : '#FFFFFF',
                         }}>
                         <div className="flex items-start justify-between mb-1">
                           <span className="w-6 h-6 flex items-center justify-center rounded-full text-xs font-medium"
@@ -263,7 +335,12 @@ export default function CalendarView({ propertyId, year, month, reservations, pr
                             )}
                           </div>
                         )}
-                        {!reservation && !price && !isPast && (
+                        {isOwnerBlocked && (
+                          <div className="rounded px-1 py-0.5 mt-auto" style={{ backgroundColor: 'rgba(131,59,14,0.15)' }}>
+                            <p className="text-[9px] font-medium" style={{ color: '#833B0E' }}>🔒 Bloqueado por ti</p>
+                          </div>
+                        )}
+                        {!reservation && !isOwnerBlocked && !price && !isPast && (
                           <div className="mt-auto"><p className="text-[9px]" style={{ color: 'rgba(26,26,26,0.15)' }}>Disponible</p></div>
                         )}
                         {!reservation && price?.is_blocked && (
@@ -467,6 +544,81 @@ export default function CalendarView({ propertyId, year, month, reservations, pr
               >
                 Ver todas las reservas
               </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: bloquear fechas ── */}
+      {showBlock && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }} onClick={() => !blocking && setShowBlock(false)}>
+          <div className="w-full max-w-md rounded-2xl p-6" style={{ backgroundColor: '#FFFFFF' }} onClick={e => e.stopPropagation()}>
+            <h3 className="font-serif text-2xl font-light text-[#1A1A1A]">Bloquear fechas</h3>
+            <p className="text-sm mt-1" style={{ color: 'rgba(26,26,26,0.45)' }}>
+              Reserva tu apartamento para ti o un familiar. Se bloquea en el calendario y no se podrá reservar.
+            </p>
+
+            <div className="mt-5 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="text-xs uppercase tracking-widest" style={{ color: 'rgba(26,26,26,0.4)' }}>Desde</span>
+                  <input type="date" min={todayStr} value={blockForm.startDate}
+                    onChange={e => setBlockForm(f => ({ ...f, startDate: e.target.value, endDate: f.endDate && f.endDate < e.target.value ? e.target.value : f.endDate }))}
+                    className="mt-1 w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ border: '1px solid rgba(26,26,26,0.15)', color: '#1A1A1A' }} />
+                </label>
+                <label className="block">
+                  <span className="text-xs uppercase tracking-widest" style={{ color: 'rgba(26,26,26,0.4)' }}>Hasta</span>
+                  <input type="date" min={blockForm.startDate || todayStr} value={blockForm.endDate}
+                    onChange={e => setBlockForm(f => ({ ...f, endDate: e.target.value }))}
+                    className="mt-1 w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ border: '1px solid rgba(26,26,26,0.15)', color: '#1A1A1A' }} />
+                </label>
+              </div>
+
+              <div>
+                <span className="text-xs uppercase tracking-widest" style={{ color: 'rgba(26,26,26,0.4)' }}>¿Para quién?</span>
+                <div className="flex gap-2 mt-1">
+                  {([['propietario', 'Para mí'], ['familiar', 'Un familiar']] as const).map(([v, l]) => (
+                    <button key={v} onClick={() => setBlockForm(f => ({ ...f, para: v }))}
+                      className="flex-1 px-3 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all"
+                      style={{ backgroundColor: blockForm.para === v ? 'rgba(131,59,14,0.12)' : 'transparent', color: blockForm.para === v ? '#833B0E' : 'rgba(26,26,26,0.5)', border: `1px solid ${blockForm.para === v ? 'rgba(131,59,14,0.35)' : 'rgba(26,26,26,0.12)'}` }}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <label className="block">
+                <span className="text-xs uppercase tracking-widest" style={{ color: 'rgba(26,26,26,0.4)' }}>Nombre de quien se queda (opcional)</span>
+                <input value={blockForm.huespedNombre} onChange={e => setBlockForm(f => ({ ...f, huespedNombre: e.target.value }))}
+                  placeholder={blockForm.para === 'familiar' ? 'Ej: Mi hermano Juan' : 'Tú'}
+                  className="mt-1 w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ border: '1px solid rgba(26,26,26,0.15)', color: '#1A1A1A' }} />
+              </label>
+
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="text-xs uppercase tracking-widest" style={{ color: 'rgba(26,26,26,0.4)' }}>Hora de llegada</span>
+                  <input type="time" value={blockForm.horaLlegada} onChange={e => setBlockForm(f => ({ ...f, horaLlegada: e.target.value }))}
+                    className="mt-1 w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ border: '1px solid rgba(26,26,26,0.15)', color: '#1A1A1A' }} />
+                </label>
+                <label className="block">
+                  <span className="text-xs uppercase tracking-widest" style={{ color: 'rgba(26,26,26,0.4)' }}>Hora de salida</span>
+                  <input type="time" value={blockForm.horaSalida} onChange={e => setBlockForm(f => ({ ...f, horaSalida: e.target.value }))}
+                    className="mt-1 w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ border: '1px solid rgba(26,26,26,0.15)', color: '#1A1A1A' }} />
+                </label>
+              </div>
+
+              {blockError && <p className="text-sm" style={{ color: '#F20022' }}>{blockError}</p>}
+            </div>
+
+            <div className="flex gap-2 mt-6">
+              <button onClick={() => setShowBlock(false)} disabled={blocking}
+                className="flex-1 py-2.5 rounded-lg text-sm font-medium cursor-pointer" style={{ border: '1px solid rgba(26,26,26,0.15)', color: 'rgba(26,26,26,0.5)' }}>
+                Cancelar
+              </button>
+              <button onClick={submitBlock} disabled={blocking}
+                className="flex-1 py-2.5 rounded-lg text-sm font-medium cursor-pointer disabled:opacity-60" style={{ backgroundColor: '#1A1A1A', color: '#FFFFFF' }}>
+                {blocking ? 'Bloqueando…' : 'Bloquear en el calendario'}
+              </button>
             </div>
           </div>
         </div>
