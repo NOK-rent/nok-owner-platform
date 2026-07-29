@@ -7,10 +7,6 @@
     {
       "path": "/api/cron/wheelhouse-rate-watch?secret=nok-sync-2025",
       "schedule": "15 * * * *"
-    },
-    {
-      "path": "/api/cron/milestone-digest?secret=nok-sync-2025",
-      "schedule": "0 13 * * *"
     }
   ]
 }

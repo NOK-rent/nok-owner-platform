@@ -29,10 +29,19 @@ async function sendEmail(to: string, subject: string, html: string) {
   return res.ok
 }
 
+// PAUSADO a pedido de Santi (2026-07-26): no enviar el digest de nuevas reservas/
+// reseñas a los propietarios hasta nuevo aviso. Reactivar = poner PAUSED = false
+// y volver a agregar el cron en vercel.json.
+const PAUSED = true
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   if (searchParams.get('secret') !== 'nok-sync-2025') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  if (PAUSED) {
+    return NextResponse.json({ ok: true, paused: true, sent: 0, note: 'Digest de milestones pausado — no se envían correos a propietarios.' })
   }
 
   const live = process.env.MILESTONE_DIGEST_LIVE === 'true'
