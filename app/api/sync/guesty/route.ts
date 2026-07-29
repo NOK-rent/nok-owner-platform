@@ -90,7 +90,7 @@ export async function POST(req: Request) {
         guest_country: r.guest?.countryCode ?? null,
         num_guests: r.guestsCount ?? null,
         total_price: r.money?.totalPaid ?? null,
-        owner_revenue: r.money?.hostPayout ?? null,
+        owner_revenue: r.money?.ownerRevenue ?? r.money?.hostPayout ?? null, // owner_revenue del listing, NO el payout real
         currency: r.money?.currency ?? 'USD',
         channel: r.source ?? null,
         synced_at: new Date().toISOString(),

@@ -146,6 +146,7 @@ export interface GuestyReservation {
   money: {
     totalPaid: number
     hostPayout: number
+    ownerRevenue?: number  // valor del listing = payout*0.95; es el que ve el owner
     currency: string
   }
   source: string   // 'Airbnb', 'Booking.com', 'Direct', etc.
