@@ -21,11 +21,13 @@ export default function LoginPage() {
   // salto para evitar el ping-pong /login <-> /dashboard.
   useEffect(() => {
     let cancelled = false
-    supabase.auth.getUser().then(({ data, error }) => {
+    async function redirectIfLoggedIn() {
+      const { data, error } = await supabase.auth.getUser()
       if (!cancelled && !error && data.user) {
         router.replace('/dashboard')
       }
-    })
+    }
+    redirectIfLoggedIn()
     return () => { cancelled = true }
   }, [router, supabase])
 
