@@ -48,9 +48,15 @@ export async function middleware(request: NextRequest) {
     return redirectTo('/login')
   }
 
-  if (user && pathname === '/login') {
-    return redirectTo('/dashboard')
-  }
+  // NOTA: intencionadamente NO redirigimos /login -> /dashboard aquí.
+  // Ese brazo convertía cualquier rebote transitorio de /dashboard -> /login
+  // (p.ej. por rotación del refresh token entre el middleware y los Server
+  // Components del dashboard, que no pueden persistir cookies) en un bucle
+  // infinito /login <-> /dashboard -> ERR_TOO_MANY_REDIRECTS, amplificado por
+  // el prefetch de <Link> y el service worker PWA. Dejando /login SIEMPRE
+  // terminal, el bucle es imposible. El salto "usuario ya logueado -> dashboard"
+  // lo hace el propio /login en cliente (getUser confirmado), que no puede
+  // hacer ping-pong.
 
   return supabaseResponse
 }
