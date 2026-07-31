@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
@@ -11,6 +11,25 @@ export default function LoginPage() {
   const [error, setError]       = useState<string | null>(null)
   const router  = useRouter()
   const supabase = createClient()
+
+  // Si el usuario YA tiene una sesión válida, saltamos al dashboard desde el
+  // cliente. El browser client refresca y persiste las cookies correctamente
+  // (a diferencia del server client dentro de un Server Component), así que
+  // esto no puede desincronizar tokens ni entrar en bucle: solo redirige
+  // cuando getUser() confirma un usuario real; si la sesión está muerta,
+  // devuelve null y nos quedamos en el login. El middleware ya NO hace este
+  // salto para evitar el ping-pong /login <-> /dashboard.
+  useEffect(() => {
+    let cancelled = false
+    async function redirectIfLoggedIn() {
+      const { data, error } = await supabase.auth.getUser()
+      if (!cancelled && !error && data.user) {
+        router.replace('/dashboard')
+      }
+    }
+    redirectIfLoggedIn()
+    return () => { cancelled = true }
+  }, [router, supabase])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
