@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { copToUSD, getUSDtoCOPRate } from '@/lib/trm'
+import { loadMonthlyFx } from '@/lib/trm'
 import { isAdminEmail } from '@/lib/admin'
 import MonthPills from '@/components/dashboard/MonthPills'
 
@@ -101,9 +101,9 @@ export default async function GroupOverviewPage({ params, searchParams }: Props)
     sb.from('maintenance_costs').select('property_id, amount, currency, date').in('property_id', propIdArr).gte('date', yearStart),
   ])
 
-  const trm = await getUSDtoCOPRate()
-  const toUSD = (amount: number, currency: string | null | undefined) =>
-    (currency || 'USD').toUpperCase() === 'COP' ? amount / trm : amount
+  // TRM por mes reportado (promedio mensual) — cada costo a la tasa de su mes
+  const fx = await loadMonthlyFx([selectedMonthKey, ...ytdMonthKeys])
+  const toUSD = (amount: number, currency: string | null | undefined) => fx.toUSD(amount, currency, selectedMonthKey)
 
   const isDirect = (ch: string | null | undefined) => {
     const c = (ch ?? '').toLowerCase()
@@ -133,18 +133,18 @@ export default async function GroupOverviewPage({ params, searchParams }: Props)
     a.commission = a.gross * ((p?.nok_commission_rate ?? 0) / 100)
     if (p?.cleaning_fee && a.checkouts > 0) {
       const raw = Number(p.cleaning_fee)
-      a.cleaning = p.cleaning_fee_currency === 'COP' ? await copToUSD(raw * a.checkouts) : raw * a.checkouts
+      a.cleaning = toUSD(raw * a.checkouts, p.cleaning_fee_currency)
     }
   }
   for (const u of monthUtilRes.data ?? []) {
     const a = perProp[u.property_id]; if (!a) continue
     const amt = Number(u.amount) || 0
-    a.utilities += (u.currency || 'COP').toUpperCase() === 'USD' ? amt : await copToUSD(amt)
+    a.utilities += fx.toUSD(amt, u.currency || 'COP', u.month || selectedMonthKey)
   }
   for (const m of monthMaintRes.data ?? []) {
     const a = perProp[m.property_id]; if (!a) continue
     const amt = Number(m.amount) || 0
-    a.maintenance += (m.currency || 'USD').toUpperCase() === 'USD' ? amt : await copToUSD(amt)
+    a.maintenance += fx.toUSD(amt, m.currency || 'USD', m.date || selectedMonthKey)
   }
   for (const pid of Object.keys(perProp)) {
     const a = perProp[pid]
@@ -168,7 +168,7 @@ export default async function GroupOverviewPage({ params, searchParams }: Props)
   let groupYtdCost = 0
   for (const c of groupCosts ?? []) {
     const amt = Number(c.amount) || 0
-    const usd = (c.currency || 'USD').toUpperCase() === 'USD' ? amt : await copToUSD(amt)
+    const usd = fx.toUSD(amt, c.currency || 'USD', c.date || selectedMonthKey)
     if (c.date >= monthStart && c.date <= monthEnd) groupMonthCost += usd
     if (c.date >= yearStart) groupYtdCost += usd
   }
@@ -176,27 +176,24 @@ export default async function GroupOverviewPage({ params, searchParams }: Props)
 
   // YTD aggregates (lightweight: just totals)
   let ytdGross = 0, ytdComm = 0, ytdCleaning = 0, ytdDirect = 0, ytdUtil = 0, ytdMaint = 0
-  const ytdCheckoutsByProp: Record<string, number> = {}
+  const ytdCleaningByProp: Record<string, number> = {}
   for (const r of ytdResRes.data ?? []) {
-    const usd = toUSD(r.owner_revenue ?? 0, r.currency)
+    const usd = fx.toUSD(r.owner_revenue ?? 0, r.currency, r.check_in)
+    const cp = propMap[r.property_id]
+    if (cp?.cleaning_fee) ytdCleaningByProp[r.property_id] = (ytdCleaningByProp[r.property_id] ?? 0) + fx.toUSD(Number(cp.cleaning_fee), cp.cleaning_fee_currency, r.check_in)
     ytdGross += usd
     if (isDirect(r.channel)) ytdDirect += usd * DIRECT_RATE
-    ytdCheckoutsByProp[r.property_id] = (ytdCheckoutsByProp[r.property_id] ?? 0) + 1
     const p = propMap[r.property_id]
     if (p) ytdComm += usd * ((p.nok_commission_rate ?? 0) / 100)
   }
-  for (const pid of Object.keys(ytdCheckoutsByProp)) {
-    const p = propMap[pid]; if (!p?.cleaning_fee) continue
-    const raw = Number(p.cleaning_fee) * ytdCheckoutsByProp[pid]
-    ytdCleaning += p.cleaning_fee_currency === 'COP' ? await copToUSD(raw) : raw
-  }
+  for (const pid of Object.keys(ytdCleaningByProp)) ytdCleaning += ytdCleaningByProp[pid]
   for (const u of ytdUtilRes.data ?? []) {
     const amt = Number(u.amount) || 0
-    ytdUtil += (u.currency || 'COP').toUpperCase() === 'USD' ? amt : await copToUSD(amt)
+    ytdUtil += fx.toUSD(amt, u.currency || 'COP', u.month)
   }
   for (const m of ytdMaintRes.data ?? []) {
     const amt = Number(m.amount) || 0
-    ytdMaint += (m.currency || 'USD').toUpperCase() === 'USD' ? amt : await copToUSD(amt)
+    ytdMaint += fx.toUSD(amt, m.currency || 'USD', m.date)
   }
   const ytdNet = ytdGross - ytdComm - ytdCleaning - ytdDirect - ytdUtil - ytdMaint - groupYtdCost
 

@@ -8,7 +8,7 @@
  * so the owner can see the NOK report first and layer their own costs on top.
  */
 
-import { copToUSD, getUSDtoCOPRate, getUSDtoDOPRate } from '@/lib/trm'
+import { loadMonthlyFx } from '@/lib/trm'
 import { costAmountForMonth, type OwnerCostRow } from '@/lib/owner-costs'
 
 export interface OwnerExpenseLine {
@@ -90,7 +90,7 @@ export async function getMonthlyStatement(sb: any, property: any, monthKey: stri
 
   // Mantenimiento: SOLO de esta unidad. NO derivar el edificio del nombre — eso
   // cruzaba costos de otras unidades del mismo building entre owners distintos.
-  const [monthResRes, checkoutsRes, monthUtilRes, monthMaintRes, ownerCostsRes, trm, trmDop] = await Promise.all([
+  const [monthResRes, checkoutsRes, monthUtilRes, monthMaintRes, ownerCostsRes, fx] = await Promise.all([
     sb.from('reservations').select('owner_revenue, nights, currency, check_in, check_out, channel')
       .eq('property_id', property.id).in('status', ['confirmed', 'checked_in', 'checked_out'])
       .lte('check_in', monthEnd).gt('check_out', monthStart),
@@ -105,16 +105,12 @@ export async function getMonthlyStatement(sb: any, property: any, monthKey: stri
       (r: any) => r,
       () => ({ data: [], error: null }),
     ),
-    getUSDtoCOPRate(),
-    getUSDtoDOPRate(),
+    // TRM del mes reportado (promedio mensual), no la de hoy
+    loadMonthlyFx([monthKey]),
   ])
 
-  const toUSD = (amount: number, currency: string | null | undefined) => {
-    const c = (currency || 'USD').toUpperCase()
-    if (c === 'COP') return amount / trm
-    if (c === 'DOP') return amount / trmDop
-    return amount
-  }
+  const toUSD = (amount: number, currency: string | null | undefined) => fx.toUSD(amount, currency, monthKey)
+  const trm = fx.rate('COP', monthKey)
 
   const monthReservations = monthResRes.data ?? []
   const totalBookedNights = monthReservations.reduce((s: number, r: any) =>
@@ -134,9 +130,7 @@ export async function getMonthlyStatement(sb: any, property: any, monthKey: stri
   let cleaning = 0
   if (property.cleaning_fee && checkouts > 0) {
     const raw = property.cleaning_fee as number
-    cleaning = property.cleaning_fee_currency === 'COP'
-      ? await copToUSD(raw * checkouts)
-      : raw * checkouts
+    cleaning = toUSD(raw * checkouts, property.cleaning_fee_currency)
   }
 
   const directCommission = monthReservations.reduce((s: number, r: any) => {
@@ -148,13 +142,13 @@ export async function getMonthlyStatement(sb: any, property: any, monthKey: stri
   let utilities = 0
   for (const u of (monthUtilRes.data ?? []) as any[]) {
     const amt = Number(u.amount) || 0
-    utilities += (u.currency || 'COP').toUpperCase() === 'USD' ? amt : await copToUSD(amt)
+    utilities += toUSD(amt, u.currency || 'COP')
   }
 
   let maintenance = 0
   for (const m of ((monthMaintRes as any)?.data ?? []) as any[]) {
     const amt = Number(m.amount) || 0
-    maintenance += (m.currency || 'USD').toUpperCase() === 'USD' ? amt : await copToUSD(amt)
+    maintenance += fx.toUSD(amt, m.currency || 'USD', m.date || monthKey)
   }
 
   const nokNet = gross - nokCommission - cleaning - directCommission - utilities - maintenance
@@ -183,7 +177,7 @@ export async function getMonthlyStatement(sb: any, property: any, monthKey: stri
   return {
     monthKey,
     propertyName: property.name || '',
-    currencyNote: `Valores en USD. TRM aplicada: ${Math.round(trm).toLocaleString('en-US')} COP/USD.`,
+    currencyNote: `Valores en USD. TRM aplicada (promedio ${monthKey}): ${Math.round(trm).toLocaleString('en-US')} COP/USD.`,
     nights: totalBookedNights,
     occupancyPct,
     adr,

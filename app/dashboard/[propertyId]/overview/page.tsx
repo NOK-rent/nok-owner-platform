@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { createServiceClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { copToUSD, getUSDtoCOPRate, getUSDtoDOPRate } from '@/lib/trm'
+import { loadMonthlyFx } from '@/lib/trm'
 import SupportForm from '@/components/dashboard/SupportForm'
 import MonthPills from '@/components/dashboard/MonthPills'
 import { loadOwnerProperty } from '@/lib/admin'
@@ -130,14 +130,11 @@ export default async function OverviewPage({ params, searchParams }: Props) {
     ),
   ])
 
-  // Live TRM (cached 24h) — convierte COP y DOP a USD
-  const [trm, trmDop] = await Promise.all([getUSDtoCOPRate(), getUSDtoDOPRate()])
-  const toUSD = (amount: number, currency: string | null | undefined) => {
-    const c = (currency || 'USD').toUpperCase()
-    if (c === 'COP') return amount / trm
-    if (c === 'DOP') return amount / trmDop
-    return amount
-  }
+  // TRM por mes reportado (promedio mensual, cacheada) — convierte COP y DOP a USD.
+  // Cada costo se convierte con la tasa del mes al que pertenece, no la de hoy.
+  const fx = await loadMonthlyFx([selectedMonthKey, ...ytdMonthKeys])
+  // Conversor del mes seleccionado (reservas del mes, costos propios, futuro)
+  const toUSD = (amount: number, currency: string | null | undefined) => fx.toUSD(amount, currency, selectedMonthKey)
 
   const lastCleaning        = cleaningsRes.data
   const upcomingReservations = upcomingRes.data ?? []
@@ -172,7 +169,7 @@ export default async function OverviewPage({ params, searchParams }: Props) {
 
   // ── Year-to-date metrics ──────────────────────────────────────
   const ytdReservations = ytdResRes.data ?? []
-  const ytdRevenue = ytdReservations.reduce((s: number, r: any) => s + toUSD(r.owner_revenue ?? 0, r.currency), 0)
+  const ytdRevenue = ytdReservations.reduce((s: number, r: any) => s + fx.toUSD(r.owner_revenue ?? 0, r.currency, r.check_in), 0)
   const ytdNights = ytdReservations.reduce((s: number, r: any) => s + (r.nights ?? 0), 0)
   const ytdAdr = ytdNights > 0 ? Math.round(ytdRevenue / ytdNights) : 0
 
@@ -213,9 +210,7 @@ export default async function OverviewPage({ params, searchParams }: Props) {
   let cleaningCostUSD  = 0
   if (property.cleaning_fee && checkouts > 0) {
     const raw = property.cleaning_fee as number
-    cleaningCostUSD = property.cleaning_fee_currency === 'COP'
-      ? await copToUSD(raw * checkouts)
-      : raw * checkouts
+    cleaningCostUSD = toUSD(raw * checkouts, property.cleaning_fee_currency)
   }
 
   // ── Direct booking commission (10% on direct/owner reservations) ──
@@ -236,7 +231,7 @@ export default async function OverviewPage({ params, searchParams }: Props) {
   let monthUtilitiesUSD = 0
   for (const u of monthUtilRows as any[]) {
     const amt = Number(u.amount) || 0
-    const usd = (u.currency || 'COP').toUpperCase() === 'USD' ? amt : await copToUSD(amt)
+    const usd = fx.toUSD(amt, u.currency || 'COP', u.month || selectedMonthKey)
     monthUtilitiesUSD += usd
     if (!utilitiesByType[u.utility_type]) utilitiesByType[u.utility_type] = []
     utilitiesByType[u.utility_type].push({ amount: amt, currency: u.currency, reference: u.reference })
@@ -247,7 +242,7 @@ export default async function OverviewPage({ params, searchParams }: Props) {
   let monthMaintenanceUSD = 0
   for (const m of monthMaintRows as any[]) {
     const amt = Number(m.amount) || 0
-    const usd = (m.currency || 'USD').toUpperCase() === 'USD' ? amt : await copToUSD(amt)
+    const usd = fx.toUSD(amt, m.currency || 'USD', m.date || selectedMonthKey)
     monthMaintenanceUSD += usd
   }
 
@@ -290,15 +285,15 @@ export default async function OverviewPage({ params, searchParams }: Props) {
   let ytdCleaningCost = 0
   if (property.cleaning_fee && ytdCheckouts > 0) {
     const raw = property.cleaning_fee as number
-    ytdCleaningCost = property.cleaning_fee_currency === 'COP'
-      ? await copToUSD(raw * ytdCheckouts)
-      : raw * ytdCheckouts
+    // Cada limpieza a la TRM de su propio mes
+    ytdCleaningCost = ytdReservations.reduce((s: number, r: any) =>
+      s + fx.toUSD(raw, property.cleaning_fee_currency, r.check_in), 0)
   }
 
   // YTD direct booking commission
   const ytdDirectCommission = ytdReservations.reduce((s: number, r: any) => {
     if (!isDirect(r.channel)) return s
-    return s + (toUSD(r.owner_revenue ?? 0, r.currency) * DIRECT_RATE)
+    return s + (fx.toUSD(r.owner_revenue ?? 0, r.currency, r.check_in) * DIRECT_RATE)
   }, 0)
 
   // YTD utilities
@@ -306,7 +301,7 @@ export default async function OverviewPage({ params, searchParams }: Props) {
   let ytdUtilitiesUSD = 0
   for (const u of ytdUtilRows as any[]) {
     const amt = Number(u.amount) || 0
-    const usd = (u.currency || 'COP').toUpperCase() === 'USD' ? amt : await copToUSD(amt)
+    const usd = fx.toUSD(amt, u.currency || 'COP', u.month)
     ytdUtilitiesUSD += usd
   }
 
@@ -315,7 +310,7 @@ export default async function OverviewPage({ params, searchParams }: Props) {
   let ytdMaintenanceUSD = 0
   for (const m of ytdMaintRows as any[]) {
     const amt = Number(m.amount) || 0
-    const usd = (m.currency || 'USD').toUpperCase() === 'USD' ? amt : await copToUSD(amt)
+    const usd = fx.toUSD(amt, m.currency || 'USD', m.date)
     ytdMaintenanceUSD += usd
   }
 

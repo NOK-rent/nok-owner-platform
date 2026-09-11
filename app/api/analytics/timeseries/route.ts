@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { copToUSD } from '@/lib/trm'
+import { loadMonthlyFx } from '@/lib/trm'
 import { isAdminEmail } from '@/lib/admin'
 
 // Returns 12-month timeseries per property: revenue, nights, adr, occupancy, commission, cleaning, direct, utilities, maintenance, net.
@@ -70,6 +70,8 @@ export async function GET(req: Request) {
     return c.includes('direct') || c === 'owner' || c === 'manual' || c.includes('website')
   }
   const DIRECT_RATE = 0.10
+  // TRM por mes reportado (promedio mensual) — cada mes de la serie a su tasa
+  const fx = await loadMonthlyFx(monthKeys)
 
   function overlapNights(ci: string, co: string, ms: string, me: string) {
     const a = new Date(ci+'T00:00:00'), b = new Date(co+'T00:00:00')
@@ -101,9 +103,7 @@ export async function GET(req: Request) {
     // For each month, compute prorated piece
     for (const m of months) {
       if (r.check_in > m.end || r.check_out <= m.start) continue
-      const rev = (r.currency || 'USD').toUpperCase() === 'USD'
-        ? (r.owner_revenue ?? 0)
-        : await copToUSD(r.owner_revenue ?? 0)
+      const rev = fx.toUSD(r.owner_revenue ?? 0, r.currency, m.key)
       const gross = prorate(rev, r.nights ?? 0, r.check_in, r.check_out, m.start, m.end)
       const row = series[pid].months[m.key]
       row.revenue += gross
@@ -122,7 +122,7 @@ export async function GET(req: Request) {
       row.commission = row.revenue * ((p?.nok_commission_rate ?? 0) / 100)
       if (p?.cleaning_fee && row.checkouts > 0) {
         const raw = Number(p.cleaning_fee) * row.checkouts
-        row.cleaning = p.cleaning_fee_currency === 'COP' ? await copToUSD(raw) : raw
+        row.cleaning = fx.toUSD(raw, p.cleaning_fee_currency, m.key)
       }
     }
   }
@@ -132,7 +132,7 @@ export async function GET(req: Request) {
     const row = series[u.property_id]?.months[u.month]
     if (!row) continue
     const amt = Number(u.amount) || 0
-    row.utilities += (u.currency || 'COP').toUpperCase() === 'USD' ? amt : await copToUSD(amt)
+    row.utilities += fx.toUSD(amt, u.currency || 'COP', u.month)
   }
   // Maintenance (bucket by month)
   for (const m of maints ?? []) {
@@ -140,7 +140,7 @@ export async function GET(req: Request) {
     const row = series[m.property_id]?.months[mk]
     if (!row) continue
     const amt = Number(m.amount) || 0
-    row.maintenance += (m.currency || 'USD').toUpperCase() === 'USD' ? amt : await copToUSD(amt)
+    row.maintenance += fx.toUSD(amt, m.currency || 'USD', mk)
   }
 
   // Finalize: net, adr, occupancy
