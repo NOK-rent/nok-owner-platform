@@ -16,6 +16,20 @@ export default async function DashboardPage() {
 
   const properties = (owner?.properties ?? []).filter((p: { active: boolean }) => p.active)
 
+  // Edificio (un propietario, N unidades): landing preferido si el owner tiene uno
+  if (owner?.id) {
+    let firstBuildingId: string | null = null
+    try {
+      const { listOwnerBuildings } = await import('@/lib/edificio')
+      const { isAdminEmail } = await import('@/lib/admin')
+      if (!isAdminEmail(owner.email)) {
+        const buildings = await listOwnerBuildings(serviceSupabase as any, owner, false)
+        firstBuildingId = buildings[0]?.id ?? null
+      }
+    } catch { firstBuildingId = null }
+    if (firstBuildingId) redirect(`/dashboard/edificio/${firstBuildingId}/overview`)
+  }
+
   // If owner has groups, prefer the first group as landing
   if (owner?.id) {
     const { data: groups } = await (serviceSupabase as any)

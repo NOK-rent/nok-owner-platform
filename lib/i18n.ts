@@ -21,11 +21,13 @@ export const NAV: Record<Locale, Record<string, string>> = {
   es: {
     resumen: 'Resumen', calendario: 'Calendario', reservas: 'Reservas', resenas: 'Reseñas',
     strategy: 'Strategy', calculos: 'Cálculos', analiticas: 'Analíticas', equipo: 'Equipo NOK',
+    costos: 'Costos y facturas', edificios: 'Edificios',
     cerrarSesion: 'Cerrar sesión',
   },
   en: {
     resumen: 'Overview', calendario: 'Calendar', reservas: 'Reservations', resenas: 'Reviews',
     strategy: 'Strategy', calculos: 'My numbers', analiticas: 'Analytics', equipo: 'NOK Team',
+    costos: 'Costs & invoices', edificios: 'Buildings',
     cerrarSesion: 'Sign out',
   },
 }

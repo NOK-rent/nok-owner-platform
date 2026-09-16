@@ -6,9 +6,15 @@ import { useRef, useEffect, useState, useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
 
 interface ChatInterfaceProps {
-  propertyId: string
+  propertyId?: string
   ownerName: string
   initialMessages: Array<{ id: string; role: 'user' | 'assistant'; content: string }>
+  /** Endpoint del chat (default /api/chat). */
+  api?: string
+  /** Body extra enviado en cada request (default { propertyId }). */
+  body?: Record<string, unknown>
+  suggestedQuestions?: string[]
+  welcomeText?: string
 }
 
 function toUIMessages(messages: ChatInterfaceProps['initialMessages']): UIMessage[] {
@@ -33,6 +39,10 @@ export default function ChatInterface({
   propertyId,
   ownerName,
   initialMessages,
+  api = '/api/chat',
+  body,
+  suggestedQuestions = SUGGESTED_QUESTIONS,
+  welcomeText = 'Soy tu asistente de NOK. Puedo responderte sobre ingresos, reservas, precios, reseñas, limpiezas e inventario de tu propiedad.',
 }: ChatInterfaceProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
   const [inputValue, setInputValue] = useState('')
@@ -40,8 +50,8 @@ export default function ChatInterface({
   const chat = useMemo(() => new Chat({
     messages: toUIMessages(initialMessages),
     transport: new DefaultChatTransport({
-      api: '/api/chat',
-      body: { propertyId },
+      api,
+      body: body ?? { propertyId },
     }),
   }), []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -84,12 +94,11 @@ export default function ChatInterface({
               Hola, {ownerName.split(' ')[0]}
             </h2>
             <p className="text-sm mb-8" style={{ color: 'rgba(26,26,26,0.4)' }}>
-              Soy tu asistente de NOK. Puedo responderte sobre ingresos, reservas,
-              precios, reseñas, limpiezas e inventario de tu propiedad.
+              {welcomeText}
             </p>
 
             <div className="w-full grid grid-cols-1 gap-2">
-              {SUGGESTED_QUESTIONS.map(q => (
+              {suggestedQuestions.map(q => (
                 <button
                   key={q}
                   onClick={() => handleSend(q)}

@@ -32,3 +32,20 @@ app/api/admin, app/api/notifications, NotificationsBanner, migrations 023/024.
 - NOK AI: nuevo tool `getRevenueStrategy` (snapshot Wheelhouse en vivo) en `lib/ai/tools.ts` + registrado en chat route + guía en system-prompt (vocabulario: "Revenue Management NOK", "zona" no "barrio").
 - fix build fb973fc: quité `NotificationsBanner` del overview — d48effc decía incluirlo pero el archivo NUNCA se agregó a git (sigue untracked). Cuando se commitee el componente + APIs + migración 024, re-agregar el banner al overview.
 - Deploys: manual `git archive HEAD` → tmp → `vercel deploy --prod` (NUNCA working tree directo — siempre hay WIP de otras sesiones).
+
+## Sesión: Edificio (Wellness, 1 propietario × 20 unidades) — 2026-09-15
+Nueva sección `/dashboard/edificio/[configId]/*` sobre `building_pnl_configs` (tabla compartida con Gardens/Ekkos):
+overview (P&L neto: net − costos = NOI; comisión NOK solo si el NOI del mes ≥ umbral COP), costos (costos del edificio
+con facturas firmadas + servicios/mantenimiento por unidad), calendario (grilla unidades × días), reservas, strategy
+(agregado sin llamar Wheelhouse por unidad + briefing IA), chat (NOK AI con tools de edificio).
+- Nuevos: `lib/building-pnl.ts` (FUENTE ÚNICA del cálculo — nok-hub la consume vía `/api/edificio/[id]/pnl?secret=`),
+  `lib/edificio.ts` (acceso: admin | config.owner_id | shared_emails | dueño de alguna unidad), `lib/edificio-i18n.ts`,
+  `lib/ai/building-tools.ts`, `lib/ai/building-system-prompt.ts`, `lib/ai/building-briefing.ts`,
+  `app/api/edificio/[configId]/pnl/route.ts`, `app/api/chat/edificio/route.ts`, `components/edificio/*`.
+- Tocados: `components/dashboard/TopNav.tsx` (selector "Edificios" + tabs; `'edificio'` en `reserved`), `app/dashboard/layout.tsx`
+  (carga `listOwnerBuildings`), `app/dashboard/page.tsx` (landing → edificio si el owner tiene uno), `lib/i18n.ts`,
+  `middleware.ts` (pasa `/api/edificio/*` solo con secret M2M válido), `components/chat/ChatInterface.tsx` (props `api`/`body` opcionales).
+- Migración `supabase/migrations/029_edificios.sql` — **PENDIENTE de aplicar** (copia en nok-hub/scripts/migration_edificios.sql).
+  Sin ella: la config existe (seed por REST) pero sin umbral/start_month/slug; los costos con factura y el chat de edificio fallan al insertar.
+- Carga de costos + facturas: la hace el equipo desde nok-hub `/edificios` (bucket privado `soporte-adjuntos`, path `edificios/{configId}/{YYYY-MM}/…`).
+- Comisión Wellness: umbral 80.000.000 COP sobre NOI mensual; tasa por encima del umbral = 0 hasta que Santi la defina (config en el hub).

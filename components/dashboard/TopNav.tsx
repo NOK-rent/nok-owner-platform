@@ -7,11 +7,13 @@ import { createClient } from '@/lib/supabase/client'
 import type { Owner, Property } from '@/lib/types/database'
 
 interface GroupLite { id: string; name: string; owner_id: string; active: boolean }
+interface BuildingLite { id: string; name: string; propertyCount: number; city: string | null }
 
 interface TopNavProps {
   owner: Owner
   properties: Property[]
   groups?: GroupLite[]
+  buildings?: BuildingLite[]
 }
 
 type Locale = 'es' | 'en'
@@ -20,11 +22,13 @@ const NAV_LABELS: Record<Locale, Record<string, string>> = {
   es: {
     resumen: 'Resumen', calendario: 'Calendario', reservas: 'Reservas', resenas: 'Reseñas',
     strategy: 'Strategy', calculos: 'Cálculos', actividad: 'Actividad', analiticas: 'Analíticas', equipo: 'Equipo NOK',
+    costos: 'Costos y facturas', edificios: 'Edificios', edificioSub: 'Edificio · P&L consolidado',
     cerrarSesion: 'Cerrar sesión',
   },
   en: {
     resumen: 'Overview', calendario: 'Calendar', reservas: 'Reservations', resenas: 'Reviews',
     strategy: 'Strategy', calculos: 'My numbers', actividad: 'Activity', analiticas: 'Analytics', equipo: 'NOK Team',
+    costos: 'Costs & invoices', edificios: 'Buildings', edificioSub: 'Building · consolidated P&L',
     cerrarSesion: 'Sign out',
   },
 }
@@ -51,7 +55,7 @@ function ChevronDown() {
   )
 }
 
-export default function TopNav({ owner, properties, groups = [] }: TopNavProps) {
+export default function TopNav({ owner, properties, groups = [], buildings = [] }: TopNavProps) {
   const pathname  = usePathname()
   const router    = useRouter()
   const supabase  = createClient()
@@ -77,16 +81,28 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
   const groupMatch = pathname.match(/\/dashboard\/group\/([^\/]+)/)
   const activeGroupId = groupMatch?.[1]
   const activeGroup = groups.find(g => g.id === activeGroupId)
+  const buildingMatch = pathname.match(/\/dashboard\/edificio\/([^\/]+)/)
+  const activeBuildingId = buildingMatch?.[1]
+  const activeBuilding = buildings.find(b => b.id === activeBuildingId)
   const match = pathname.match(/\/dashboard\/([^\/]+)/)
   const rawId = match?.[1]
-  const reserved = ['analytics', 'group', 'equipo']
-  const activePropertyId = !activeGroupId
+  const reserved = ['analytics', 'group', 'equipo', 'edificio']
+  const activePropertyId = !activeGroupId && !activeBuildingId
     ? (rawId && !reserved.includes(rawId) ? rawId : properties[0]?.id)
     : undefined
   const activeProperty   = properties.find(p => p.id === activePropertyId) ?? properties[0]
-  const activeLabel = activeGroup ? `▦ ${activeGroup.name}` : (activeProperty?.name ?? '—')
+  const activeLabel = activeBuilding
+    ? `⌂ ${activeBuilding.name}`
+    : activeGroup ? `▦ ${activeGroup.name}` : (activeProperty?.name ?? '—')
 
-  const navLinks = activeGroupId ? [
+  const navLinks = activeBuildingId ? [
+    { label: L.resumen,    href: `/dashboard/edificio/${activeBuildingId}/overview` },
+    { label: L.costos,     href: `/dashboard/edificio/${activeBuildingId}/costos` },
+    { label: L.calendario, href: `/dashboard/edificio/${activeBuildingId}/calendario` },
+    { label: L.reservas,   href: `/dashboard/edificio/${activeBuildingId}/reservas` },
+    { label: L.strategy,   href: `/dashboard/edificio/${activeBuildingId}/strategy` },
+    { label: 'NOK AI',     href: `/dashboard/edificio/${activeBuildingId}/chat`, ai: true },
+  ] : activeGroupId ? [
     { label: L.resumen,    href: `/dashboard/group/${activeGroupId}/overview` },
     { label: L.reservas,   href: `/dashboard/group/${activeGroupId}/reservations` },
     { label: L.resenas,    href: `/dashboard/group/${activeGroupId}/reviews` },
@@ -146,7 +162,7 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
         <div className="h-5 w-px" style={{ backgroundColor: 'rgba(26,26,26,0.1)' }} />
 
         {/* Property selector */}
-        {(properties.length > 1 || groups.length > 0) ? (
+        {(properties.length > 1 || groups.length > 0 || buildings.length > 0) ? (
           <div className="relative" ref={propRef}>
             <button
               onClick={() => setShowPropMenu(v => !v)}
@@ -173,6 +189,23 @@ export default function TopNav({ owner, properties, groups = [] }: TopNavProps) 
                   overflowY: 'auto',
                 }}
               >
+                {buildings.length > 0 && (
+                  <div className="px-4 pt-2 pb-1 text-[10px] uppercase tracking-widest" style={{ color: 'rgba(26,26,26,0.35)' }}>{L.edificios}</div>
+                )}
+                {buildings.map(b => (
+                  <button
+                    key={b.id}
+                    onClick={() => { router.push(`/dashboard/edificio/${b.id}/overview`); setShowPropMenu(false) }}
+                    className="w-full text-left px-4 py-3 transition-colors duration-150 cursor-pointer"
+                    style={{
+                      borderBottom: '1px solid rgba(26,26,26,0.05)',
+                      backgroundColor: b.id === activeBuildingId ? 'rgba(131, 59, 14,0.12)' : 'transparent',
+                    }}
+                  >
+                    <span className="block text-sm text-[#1A1A1A] font-medium">⌂ {b.name}</span>
+                    <span className="block text-xs mt-0.5" style={{ color: 'rgba(26,26,26,0.4)' }}>{L.edificioSub} · {b.propertyCount}{b.city ? ` · ${b.city}` : ''}</span>
+                  </button>
+                ))}
                 {groups.length > 0 && (
                   <div className="px-4 pt-2 pb-1 text-[10px] uppercase tracking-widest" style={{ color: 'rgba(26,26,26,0.35)' }}>Grupos</div>
                 )}

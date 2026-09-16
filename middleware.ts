@@ -30,7 +30,16 @@ export async function middleware(request: NextRequest) {
 
   // Public paths that don't require auth (incl. assets PWA: manifest, service worker, offline)
   const publicPaths = ['/login', '/auth/callback', '/onboarding', '/admin', '/api/onboarding', '/apt-setup', '/api/apt-setup', '/api/sync-reviews', '/api/cron', '/api/owners', '/api/webhooks', '/manifest.webmanifest', '/sw.js', '/offline']
-  const isPublic = publicPaths.some((p) => pathname.startsWith(p))
+  let isPublic = publicPaths.some((p) => pathname.startsWith(p))
+
+  // M2M desde nok-hub (Vista propietario de /edificios): /api/edificio/* pasa
+  // solo con el VALOR correcto de OWNER_PORTAL_SECRET en el header (nunca en la
+  // URL: no queda en logs). La ruta lo vuelve a validar. Falla cerrado sin env.
+  if (!isPublic && pathname.startsWith('/api/edificio/')) {
+    const expected = process.env.OWNER_PORTAL_SECRET
+    const s = request.headers.get('x-sync-secret')
+    if (expected && s && s === expected) isPublic = true
+  }
 
   // Redirect while PRESERVING the auth cookies Supabase just refreshed on
   // `supabaseResponse`. A bare NextResponse.redirect() drops those Set-Cookie

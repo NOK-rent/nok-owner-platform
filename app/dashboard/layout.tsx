@@ -45,9 +45,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
     groups = gs ?? []
   } catch { groups = [] }
 
+  // Edificios (un propietario, N unidades) — building_pnl_configs
+  let buildings: { id: string; name: string; propertyCount: number; city: string | null }[] = []
+  try {
+    const { listOwnerBuildings } = await import('@/lib/edificio')
+    buildings = await listOwnerBuildings(serviceSupabase as any, owner, isAdmin)
+  } catch { buildings = [] }
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F0EFED' }}>
-      <TopNav owner={owner} properties={properties} groups={groups} />
+      <TopNav owner={owner} properties={properties} groups={groups} buildings={buildings} />
       <main className="pt-16 min-w-0">
         {children}
       </main>
