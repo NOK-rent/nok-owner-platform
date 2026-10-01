@@ -45,7 +45,21 @@ export async function loadOwnerProperty(propertyId: string) {
   if (!isAdmin) {
     query = query.eq('owner_id', owner.id)
   }
-  const { data: property } = await query.single()
+  let { data: property } = await query.maybeSingle()
+
+  // Sitio de edificio: quien tiene acceso al edificio ve también sus unidades
+  // (el visor sin login y los emails compartidos no son dueños en properties.owner_id).
+  if (!property && !isAdmin && isStandalone()) {
+    const { loadStandaloneConfig, canAccessBuilding } = await import('@/lib/edificio')
+    const cfg = await loadStandaloneConfig(sb)
+    if (cfg && cfg.property_ids.includes(propertyId)) {
+      const { data: full } = await sb.from('owners').select('id, email, additional_emails').eq('id', owner.id).single()
+      if (full && canAccessBuilding(cfg, full, [], false)) {
+        const { data: p } = await sb.from('properties').select('*').eq('id', propertyId).maybeSingle()
+        property = p
+      }
+    }
+  }
 
   return { owner, property, sb, isAdmin }
 }

@@ -29,7 +29,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Public paths that don't require auth (incl. assets PWA: manifest, service worker, offline)
-  const publicPaths = ['/login', '/auth/callback', '/onboarding', '/admin', '/api/onboarding', '/apt-setup', '/api/apt-setup', '/api/sync-reviews', '/api/cron', '/api/owners', '/api/webhooks', '/manifest.webmanifest', '/sw.js', '/offline']
+  const publicPaths = ['/login', '/auth/callback', '/onboarding', '/admin', '/api/onboarding', '/apt-setup', '/api/apt-setup', '/api/sync-reviews', '/api/cron', '/api/auto-login', '/api/owners', '/api/webhooks', '/manifest.webmanifest', '/sw.js', '/offline']
   let isPublic = publicPaths.some((p) => pathname.startsWith(p))
 
   // M2M desde nok-hub (Vista propietario de /edificios): /api/edificio/* pasa
@@ -48,6 +48,23 @@ export async function middleware(request: NextRequest) {
   const redirectTo = (to: string) => {
     const url = request.nextUrl.clone()
     url.pathname = to
+    const res = NextResponse.redirect(url)
+    supabaseResponse.cookies.getAll().forEach((cookie) => res.cookies.set(cookie))
+    return res
+  }
+
+  // Sitio de edificio sin login (own96.nok.rent): sin sesión → auto-login con la
+  // cuenta visor y vuelta a la misma URL. /login tampoco se muestra.
+  const autoLogin = !!process.env.NEXT_PUBLIC_PORTAL_BUILDING_SLUG && !!process.env.PORTAL_VIEWER_EMAIL && !!process.env.PORTAL_VIEWER_PASSWORD
+  if (autoLogin && pathname.startsWith('/api/auto-login')) return supabaseResponse
+  if (autoLogin && !user && (!isPublic || pathname === '/login' || pathname === '/')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/api/auto-login'
+    url.search = ''
+    const next = pathname === '/login' || pathname === '/' ? '/dashboard' : pathname + (request.nextUrl.search || '')
+    url.searchParams.set('next', next)
+    const k = request.nextUrl.searchParams.get('k')
+    if (k) url.searchParams.set('k', k)
     const res = NextResponse.redirect(url)
     supabaseResponse.cookies.getAll().forEach((cookie) => res.cookies.set(cookie))
     return res
