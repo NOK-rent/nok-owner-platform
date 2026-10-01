@@ -102,14 +102,25 @@ export interface BuildingMonth {
   ownerNet: number
 }
 
-export interface BuildingPropertyMonth { gross: number; net: number; nights: number; reservations: number; checkouts: number; occupancy: number; adr: number }
+export interface BuildingPropertyMonth {
+  gross: number; net: number; nights: number; reservations: number; checkouts: number; occupancy: number; adr: number
+  /** Reparto de costos por coeficiente (área de la unidad ÷ área de las unidades activas del mes). */
+  coefficient: number          // 0–1 (0 si la unidad no participa ese mes)
+  allocatedBuilding: number    // costos del edificio asignados por coeficiente (USD)
+  directBuilding: number       // costos del edificio cargados a esta unidad puntual (USD)
+  ownUtilities: number         // servicios públicos propios (USD)
+  ownMaintenance: number       // mantenimiento propio (USD)
+  costs: number                // total asignado a la unidad
+  noi: number                  // net − costs
+}
 
 export interface BuildingPropertySummary {
   id: string
   name: string
   active: boolean
+  areaM2: number | null
   byMonth: Record<string, BuildingPropertyMonth>
-  totals: { gross: number; net: number; nights: number; reservations: number }
+  totals: { gross: number; net: number; nights: number; reservations: number; costs: number; noi: number }
 }
 
 export interface BuildingCostLine extends BuildingCostRow {
@@ -216,10 +227,24 @@ export function costAppliesToMonth(c: BuildingCostRow, month: string, checkouts:
 
 // ── cálculo principal ──────────────────────────────────────────────────────
 
+export interface PnlPropertyInput {
+  id: string; name: string; active: boolean
+  area_m2?: number | null
+  guesty_activated_at?: string | null
+}
+
+/** Área base por unidad para el reparto: si falta el dato, promedio de las que lo tienen; si ninguna, 1 (reparto igual). */
+function areaWeight(p: PnlPropertyInput, all: PnlPropertyInput[]): number {
+  const own = Number(p.area_m2)
+  if (own > 0) return own
+  const known = all.map(x => Number(x.area_m2)).filter(v => v > 0)
+  return known.length ? known.reduce((s, v) => s + v, 0) / known.length : 1
+}
+
 export async function computeBuildingPnl(
   sb: any,
   config: BuildingConfig,
-  properties: { id: string; name: string; active: boolean }[],
+  properties: PnlPropertyInput[],
   year: number,
 ): Promise<BuildingPnl> {
   const months = reportedMonths(year, config.start_month)
@@ -254,7 +279,7 @@ export async function computeBuildingPnl(
 
   const propSummary: Record<string, BuildingPropertySummary> = {}
   for (const p of properties) {
-    propSummary[p.id] = { id: p.id, name: p.name, active: p.active, byMonth: {}, totals: { gross: 0, net: 0, nights: 0, reservations: 0 } }
+    propSummary[p.id] = { id: p.id, name: p.name, active: p.active, areaM2: Number(p.area_m2) > 0 ? Number(p.area_m2) : null, byMonth: {}, totals: { gross: 0, net: 0, nights: 0, reservations: 0, costs: 0, noi: 0 } }
   }
   const channelAgg: Record<string, { ids: Set<string>; net: number; gross: number }> = {}
   const costLines: Record<string, BuildingCostLine[]> = {}
@@ -272,7 +297,7 @@ export async function computeBuildingPnl(
 
     let gross = 0, net = 0, nights = 0, resCount = 0, checkouts = 0
     const perProp: Record<string, BuildingPropertyMonth> = {}
-    for (const p of properties) perProp[p.id] = { gross: 0, net: 0, nights: 0, reservations: 0, checkouts: 0, occupancy: 0, adr: 0 }
+    for (const p of properties) perProp[p.id] = { gross: 0, net: 0, nights: 0, reservations: 0, checkouts: 0, occupancy: 0, adr: 0, coefficient: 0, allocatedBuilding: 0, directBuilding: 0, ownUtilities: 0, ownMaintenance: 0, costs: 0, noi: 0 }
 
     const isFuture = m > nowKey
     for (const r of reservations) {
@@ -298,6 +323,7 @@ export async function computeBuildingPnl(
     // Costos del edificio por categoría
     const byCategory: Record<string, number> = {}
     const lines: BuildingCostLine[] = []
+    let sharedBuilding = 0   // costos del edificio a repartir por coeficiente
     for (const c of costs) {
       const applied = costAppliesToMonth(c, m, checkouts, config.start_month)
       if (!applied) continue
@@ -305,13 +331,36 @@ export async function computeBuildingPnl(
       const cat = (c.category || 'otros').toLowerCase()
       byCategory[cat] = (byCategory[cat] ?? 0) + usd
       lines.push({ ...c, amountUSD: usd, appliedMonth: m })
+      if (c.property_id && perProp[c.property_id]) perProp[c.property_id].directBuilding += usd
+      else sharedBuilding += usd
     }
     const buildingCosts = Object.values(byCategory).reduce((s, v) => s + v, 0)
     let util = 0
-    for (const u of utilities) if (u.month === m) util += fx.toUSD(Number(u.amount) || 0, u.currency || 'COP', m)
+    for (const u of utilities) if (u.month === m) {
+      const v = fx.toUSD(Number(u.amount) || 0, u.currency || 'COP', m)
+      util += v
+      if (perProp[u.property_id]) perProp[u.property_id].ownUtilities += v
+    }
     let maint = 0
-    for (const x of maintenance) if ((x.date || '').slice(0, 7) === m) maint += fx.toUSD(Number(x.amount) || 0, x.currency || 'USD', m)
+    for (const x of maintenance) if ((x.date || '').slice(0, 7) === m) {
+      const v = fx.toUSD(Number(x.amount) || 0, x.currency || 'USD', m)
+      maint += v
+      if (perProp[x.property_id]) perProp[x.property_id].ownMaintenance += v
+    }
     const totalCosts = buildingCosts + util + maint
+
+    // Reparto por coeficiente de área entre las unidades activas que ya operaban ese mes
+    const eligible = properties.filter(p => p.active && (!p.guesty_activated_at || p.guesty_activated_at.slice(0, 10) <= mEnd))
+    const weights = new Map(eligible.map(p => [p.id, areaWeight(p, properties)]))
+    const totalWeight = Array.from(weights.values()).reduce((s, v) => s + v, 0)
+    for (const p of properties) {
+      const pp = perProp[p.id]
+      const w = weights.get(p.id) ?? 0
+      pp.coefficient = totalWeight > 0 ? w / totalWeight : 0
+      pp.allocatedBuilding = sharedBuilding * pp.coefficient
+      pp.costs = pp.allocatedBuilding + pp.directBuilding + pp.ownUtilities + pp.ownMaintenance
+      pp.noi = pp.net - pp.costs
+    }
 
     const noi = net - totalCosts
     const basisUsd = thresholdBasis === 'gross' ? gross : noi
@@ -333,6 +382,7 @@ export async function computeBuildingPnl(
       const ps = propSummary[p.id]
       ps.byMonth[m] = pp
       ps.totals.gross += pp.gross; ps.totals.net += pp.net; ps.totals.nights += pp.nights; ps.totals.reservations += pp.reservations
+      if (!isFuture) { ps.totals.costs += pp.costs; ps.totals.noi += pp.noi }
     }
     costLines[m] = lines
 

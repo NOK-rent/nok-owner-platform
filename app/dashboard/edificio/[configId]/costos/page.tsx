@@ -169,6 +169,65 @@ export default async function EdificioCostosPage({ params, searchParams }: Props
           </div>
         )}
 
+        {/* Asignación por unidad (coeficiente de área) */}
+        {m && m.costs.total > 0 && (
+          <div className="rounded-xl p-6 mb-6" style={{ backgroundColor: '#FFFFFF', border: '1px solid rgba(26,26,26,0.08)' }}>
+            <h2 className="font-serif text-xl text-[#1A1A1A] mb-1">{t.allocationTitle} — {monthLabel(selected, locale)}</h2>
+            <p className="text-xs mb-4" style={{ color: 'rgba(26,26,26,0.45)' }}>{t.allocationHint}</p>
+            {pnl.properties.every(p => p.areaM2 == null) && (
+              <p className="text-xs mb-4 px-3 py-2 rounded-lg inline-block" style={{ backgroundColor: 'rgba(214,167,0,0.12)', color: '#7A5F00' }}>{t.allocationNoArea}</p>
+            )}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[880px]">
+                <thead>
+                  <tr className="text-left text-[#1A1A1A]/40 text-xs uppercase tracking-wider">
+                    <th className="py-2">{t.colUnit}</th>
+                    <th className="py-2 text-right">{t.colArea}</th>
+                    <th className="py-2 text-right">{t.colCoef}</th>
+                    <th className="py-2 text-right">{t.colAllocated}</th>
+                    <th className="py-2 text-right">{t.colDirect}</th>
+                    <th className="py-2 text-right">{t.colOwnUtil}</th>
+                    <th className="py-2 text-right">{t.colOwnMaint}</th>
+                    <th className="py-2 text-right">{t.colTotalUnit}</th>
+                    <th className="py-2 text-right">{t.colUnitNet}</th>
+                    <th className="py-2 text-right">{t.colUnitNoi}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pnl.properties.map(p => {
+                    const pm = p.byMonth[selected]
+                    if (!pm) return null
+                    return (
+                      <tr key={p.id} className="border-t border-[#1A1A1A]/5">
+                        <td className="py-2 text-[#1A1A1A]">{p.name}</td>
+                        <td className="py-2 text-right text-[#1A1A1A]/60">{p.areaM2 != null ? p.areaM2 : '—'}</td>
+                        <td className="py-2 text-right text-[#1A1A1A]/60">{pm.coefficient > 0 ? `${(pm.coefficient * 100).toFixed(1)}%` : '—'}</td>
+                        <td className="py-2 text-right text-[#1A1A1A]/80">{fmtUSD(pm.allocatedBuilding)}</td>
+                        <td className="py-2 text-right text-[#1A1A1A]/80">{pm.directBuilding > 0 ? fmtUSD(pm.directBuilding) : '—'}</td>
+                        <td className="py-2 text-right text-[#1A1A1A]/80">{pm.ownUtilities > 0 ? fmtUSD(pm.ownUtilities) : '—'}</td>
+                        <td className="py-2 text-right text-[#1A1A1A]/80">{pm.ownMaintenance > 0 ? fmtUSD(pm.ownMaintenance) : '—'}</td>
+                        <td className="py-2 text-right text-[#F20022]/80">− {fmtUSD(pm.costs)}</td>
+                        <td className="py-2 text-right text-[#1A1A1A]">{fmtUSD(pm.net)}</td>
+                        <td className="py-2 text-right font-medium" style={{ color: pm.noi >= 0 ? '#0E6845' : '#F20022' }}>{fmtUSD(pm.noi)}</td>
+                      </tr>
+                    )
+                  })}
+                  <tr className="border-t border-[#1A1A1A]/15 font-medium">
+                    <td className="py-2 text-[#1A1A1A]" colSpan={3}>{config.name}</td>
+                    <td className="py-2 text-right text-[#1A1A1A]">{fmtUSD(pnl.properties.reduce((s, p) => s + (p.byMonth[selected]?.allocatedBuilding ?? 0), 0))}</td>
+                    <td className="py-2 text-right text-[#1A1A1A]">{fmtUSD(pnl.properties.reduce((s, p) => s + (p.byMonth[selected]?.directBuilding ?? 0), 0))}</td>
+                    <td className="py-2 text-right text-[#1A1A1A]">{fmtUSD(m.costs.utilities)}</td>
+                    <td className="py-2 text-right text-[#1A1A1A]">{fmtUSD(m.costs.maintenance)}</td>
+                    <td className="py-2 text-right text-[#F20022]/80">− {fmtUSD(m.costs.total)}</td>
+                    <td className="py-2 text-right text-[#1A1A1A]">{fmtUSD(m.net)}</td>
+                    <td className="py-2 text-right" style={{ color: m.noi >= 0 ? '#0E6845' : '#F20022' }}>{fmtUSD(m.noi)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         {/* Unit utilities */}
         {utilities.length > 0 && (
           <div className="rounded-xl p-6 mb-6" style={{ backgroundColor: '#FFFFFF', border: '1px solid rgba(26,26,26,0.08)' }}>

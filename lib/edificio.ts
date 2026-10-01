@@ -20,6 +20,7 @@ export interface BuildingProperty {
   guesty_listing_id: string | null; wheelhouse_property_id: string | null; owner_id: string | null
   cover_image_url: string | null
   airbnb_url?: string | null; booking_url?: string | null; marriot_url?: string | null; nok_booking_engine_url?: string | null
+  area_m2?: number | null; guesty_activated_at?: string | null
 }
 
 function normalizeConfig(row: any): BuildingConfig {
@@ -144,7 +145,7 @@ export async function resolveBuilding(
 
   const { data: props } = config.property_ids.length
     ? await sb.from('properties')
-        .select('id, name, active, city, bedrooms, guesty_listing_id, wheelhouse_property_id, owner_id, cover_image_url, airbnb_url, booking_url, marriot_url, nok_booking_engine_url')
+        .select('*')   // '*' tolera columnas aún no migradas (area_m2)
         .in('id', config.property_ids)
     : { data: [] as any[] }
   const properties: BuildingProperty[] = (props ?? [])
@@ -161,7 +162,7 @@ export async function resolveBuildingUnauthenticated(sb: any, configId: string) 
   const config = normalizeConfig(row)
   const { data: props } = config.property_ids.length
     ? await sb.from('properties')
-        .select('id, name, active, city, bedrooms, guesty_listing_id, wheelhouse_property_id, owner_id, cover_image_url, airbnb_url, booking_url, marriot_url, nok_booking_engine_url')
+        .select('*')   // '*' tolera columnas aún no migradas (area_m2)
         .in('id', config.property_ids)
     : { data: [] as any[] }
   const properties: BuildingProperty[] = (props ?? [])

@@ -244,7 +244,7 @@ export default async function EdificioOverviewPage({ params, searchParams }: Pro
             <div className="rounded-xl p-6 mb-8" style={{ backgroundColor: '#FFFFFF', border: '1px solid rgba(26,26,26,0.08)' }}>
               <h2 className="font-serif text-xl text-[#1A1A1A] mb-4">{t.unitsTitle} — {monthLabel(selected, locale)}</h2>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm min-w-[720px]">
+                <table className="w-full text-sm min-w-[960px]">
                   <thead>
                     <tr className="text-left text-[#1A1A1A]/40 text-xs uppercase tracking-wider">
                       <th className="py-2">{t.colUnit}</th>
@@ -253,6 +253,9 @@ export default async function EdificioOverviewPage({ params, searchParams }: Pro
                       <th className="py-2 text-right">{t.colOcc}</th>
                       <th className="py-2 text-right">{t.colAdr}</th>
                       <th className="py-2 text-right">{t.colNet}</th>
+                      <th className="py-2 text-right">{t.colCoef}</th>
+                      <th className="py-2 text-right">{t.colUnitCosts}</th>
+                      <th className="py-2 text-right">{t.colUnitNoi}</th>
                       <th className="py-2 text-right">{t.colPublished}</th>
                     </tr>
                   </thead>
@@ -270,6 +273,9 @@ export default async function EdificioOverviewPage({ params, searchParams }: Pro
                           <td className="py-2 text-right text-[#1A1A1A]/60">{pct(pm?.occupancy ?? 0)}</td>
                           <td className="py-2 text-right text-[#1A1A1A]/60">{pm && pm.nights > 0 ? fmtUSD(pm.adr) : '—'}</td>
                           <td className="py-2 text-right text-[#1A1A1A]">{fmtUSD(pm?.net ?? 0)}</td>
+                          <td className="py-2 text-right text-[#1A1A1A]/50">{pm && pm.coefficient > 0 ? `${(pm.coefficient * 100).toFixed(1)}%` : '—'}</td>
+                          <td className="py-2 text-right text-[#F20022]/80">{pm && pm.costs > 0 ? `− ${fmtUSD(pm.costs)}` : '—'}</td>
+                          <td className="py-2 text-right font-medium" style={{ color: (pm?.noi ?? 0) >= 0 ? '#0E6845' : '#F20022' }}>{fmtUSD(pm?.noi ?? 0)}</td>
                           <td className="py-2 text-right whitespace-nowrap">
                             {linksFor(p.id).map(c => (
                               <a key={c.key} href={c.url!} target="_blank" rel="noopener noreferrer" title={c.label}
