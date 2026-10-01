@@ -72,13 +72,14 @@ export default async function EdificioOverviewPage({ params, searchParams }: Pro
         ) : (
           <>
             {/* KPIs */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-8">
               <Kpi value={fmtUSD(m.net)} label={t.kpiNet} />
               <Kpi value={`− ${fmtUSD(m.costs.total)}`} label={t.kpiCosts} tone="neg" />
               <Kpi value={fmtUSD(m.noi)} label={t.kpiNoi} />
               <Kpi value={fmtUSD(m.ownerNet)} label={t.kpiOwnerNet} highlight />
               <Kpi value={pct(m.occupancy)} label={t.kpiOcc} />
               <Kpi value={String(m.nights)} label={t.kpiNights} />
+              <Kpi value={m.nights > 0 ? fmtUSD(m.adr) : '—'} label={t.kpiAdr} />
             </div>
 
             {m.isFuture && (
@@ -185,6 +186,7 @@ export default async function EdificioOverviewPage({ params, searchParams }: Pro
                       <th className="py-2 text-right">{t.colCommission}</th>
                       <th className="py-2 text-right">{t.colOwner}</th>
                       <th className="py-2 text-right">{t.colOcc}</th>
+                      <th className="py-2 text-right">{t.colAdr}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -200,6 +202,7 @@ export default async function EdificioOverviewPage({ params, searchParams }: Pro
                         <td className="py-2 text-right text-[#1A1A1A]/60">{x.commission > 0 ? `− ${fmtUSD(x.commission)}` : '—'}</td>
                         <td className="py-2 text-right font-medium" style={{ color: x.ownerNet >= 0 ? '#0E6845' : '#F20022' }}>{fmtUSD(x.ownerNet)}</td>
                         <td className="py-2 text-right text-[#1A1A1A]/60">{pct(x.occupancy)}</td>
+                        <td className="py-2 text-right text-[#1A1A1A]/60">{x.nights > 0 ? fmtUSD(x.adr) : '—'}</td>
                       </tr>
                     ))}
                   </tbody>
