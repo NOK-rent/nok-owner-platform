@@ -3,6 +3,7 @@ import { Resend } from 'resend'
 import { createServiceClient } from '@/lib/supabase/server'
 import { signOnboardingToken } from '@/lib/onboarding-token'
 import FollowupD7 from '@/emails/FollowupD7'
+import { cronSkippedInStandalone } from '@/lib/portal-mode'
 
 const FROM = process.env.RESEND_FROM_ADDRESS || 'NOK <noreply@nok.rent>'
 const SUPPORT_EMAIL = process.env.NOK_SUPPORT_EMAIL || 'hello@nok.rent'
@@ -20,6 +21,9 @@ const SCHEDULE_LINK = process.env.NOK_SCHEDULE_LINK || `${APP_URL}/dashboard`
  * Runs via Vercel Cron or Make scheduler. Gated by CRON_SECRET.
  */
 export async function GET(req: NextRequest) {
+  // Sitio de un edificio (own96.nok.rent): los crons solo corren en owners.nok.rent
+  const skipped = cronSkippedInStandalone()
+  if (skipped) return skipped
   const secret = req.nextUrl.searchParams.get('secret') ||
     req.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
   if (!secret || secret !== process.env.CRON_SECRET) {

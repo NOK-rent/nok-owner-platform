@@ -3,10 +3,12 @@ import './globals.css'
 import PwaRegister from '@/components/pwa/PwaRegister'
 import InstallPrompt from '@/components/pwa/InstallPrompt'
 
+const BRAND = process.env.NEXT_PUBLIC_PORTAL_BRAND || 'NOK Owners'
+
 export const metadata: Metadata = {
-  title: 'NOK — Portal de Propietarios',
+  title: BRAND === 'NOK Owners' ? 'NOK — Portal de Propietarios' : `${BRAND} — Portal del propietario · NOK`,
   description: 'Portal privado para propietarios de NOK. Curated stays designed to flow with you.',
-  applicationName: 'NOK Owners',
+  applicationName: BRAND,
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,

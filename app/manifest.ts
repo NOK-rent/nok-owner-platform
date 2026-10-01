@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'NOK Owners',
+    name: process.env.NEXT_PUBLIC_PORTAL_BRAND || 'NOK Owners',
     short_name: 'NOK',
     description: 'Portal de propietarios NOK — tu propiedad, siempre a la vista.',
     start_url: '/dashboard',

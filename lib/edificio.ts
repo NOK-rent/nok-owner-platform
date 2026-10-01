@@ -11,6 +11,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { isAdminEmail } from '@/lib/admin'
 import { redirect, notFound } from 'next/navigation'
 import type { BuildingConfig } from '@/lib/building-pnl'
+import { standaloneSlug, externalBuildingSlugs } from '@/lib/portal-mode'
 
 export interface BuildingLite { id: string; name: string; propertyCount: number; city: string | null; slug: string | null }
 
@@ -50,7 +51,13 @@ function ownerEmails(owner: { email?: string | null; additional_emails?: string[
  * vería el P&L completo del edificio acá.
  */
 export function isPortalEnabled(config: BuildingConfig): boolean {
-  return !!config.slug
+  if (!config.slug) return false
+  const slug = config.slug.toLowerCase()
+  const standalone = standaloneSlug()
+  // Sitio de un edificio: solo ese edificio existe.
+  if (standalone) return slug === standalone
+  // Portal genérico: los edificios con sitio propio no aparecen acá.
+  return !externalBuildingSlugs().includes(slug)
 }
 
 /** ¿Este owner puede ver esta config? (sin tocar la DB más allá de sus propiedades). */
@@ -87,6 +94,14 @@ export async function listOwnerBuildings(
     .map((c: BuildingConfig) => ({ id: c.id, name: c.name, propertyCount: c.property_ids.length, city: c.city ?? null, slug: c.slug ?? null }))
 }
 
+/** Config del edificio de este sitio (modo standalone), o null en el portal genérico. */
+export async function loadStandaloneConfig(sb: any): Promise<BuildingConfig | null> {
+  const slug = standaloneSlug()
+  if (!slug) return null
+  const { data } = await sb.from('building_pnl_configs').select('*').eq('slug', slug).eq('active', true).maybeSingle()
+  return data ? normalizeConfig(data) : null
+}
+
 /**
  * Carga edificio + unidades para páginas del portal. Redirige a /login sin
  * sesión y devuelve 404 si el owner no tiene acceso.
@@ -116,6 +131,8 @@ export async function resolveBuilding(
   const { data: row } = await sb.from('building_pnl_configs').select('*').eq('id', configId).maybeSingle()
   if (!row) return null
   const config = normalizeConfig(row)
+  // En un sitio de edificio ni el admin ve otros edificios por URL.
+  if (standaloneSlug() && !isPortalEnabled(config)) return null
 
   let owned: string[] = []
   if (!isAdmin) {

@@ -65,8 +65,8 @@ export async function POST(req: Request) {
     const owner = ownerRes.data
     const property = propertyRes.data
 
-    const ADMIN_EMAILS = ['se@nok.rent']
-    const isAdmin = ADMIN_EMAILS.includes(owner.email)
+    const { isAdminEmail } = await import('@/lib/admin')
+    const isAdmin = isAdminEmail(owner.email)
     if (!isAdmin && property.owner_id !== owner.id) {
       return new Response(JSON.stringify({ error: 'Forbidden' }), {
         status: 403,

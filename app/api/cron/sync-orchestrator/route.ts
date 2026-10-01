@@ -7,10 +7,14 @@
  */
 
 import { NextResponse } from 'next/server'
+import { cronSkippedInStandalone } from '@/lib/portal-mode'
 
 export const maxDuration = 300
 
 export async function GET(req: Request) {
+  // Sitio de un edificio (own96.nok.rent): los crons solo corren en owners.nok.rent
+  const skipped = cronSkippedInStandalone()
+  if (skipped) return skipped
   const { searchParams } = new URL(req.url)
   const secret = searchParams.get('secret')
 

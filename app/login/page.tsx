@@ -70,7 +70,7 @@ export default function LoginPage() {
             NOK
           </p>
           <p style={{ color: 'rgba(26,26,26,0.35)', letterSpacing: '0.15em' }} className="text-xs uppercase">
-            NOK Owners &nbsp;·&nbsp; Feels right. Anywhere.
+            {process.env.NEXT_PUBLIC_PORTAL_BRAND || 'NOK Owners'} &nbsp;·&nbsp; Feels right. Anywhere.
           </p>
         </div>
 

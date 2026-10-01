@@ -52,9 +52,21 @@ export default async function DashboardLayout({ children }: { children: React.Re
     buildings = await listOwnerBuildings(serviceSupabase as any, owner, isAdmin)
   } catch { buildings = [] }
 
+  // Sitio de un edificio (own96.nok.rent): solo existen ese edificio y sus unidades.
+  const { isStandalone } = await import('@/lib/portal-mode')
+  const standalone = isStandalone()
+  if (standalone) {
+    const { loadStandaloneConfig } = await import('@/lib/edificio')
+    const cfg = await loadStandaloneConfig(serviceSupabase as any).catch(() => null)
+    const ids = new Set(cfg?.property_ids ?? [])
+    properties = properties.filter((p: any) => ids.has(p.id))
+    groups = []
+    buildings = cfg ? buildings.filter(b => b.id === cfg.id) : []
+  }
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F0EFED' }}>
-      <TopNav owner={owner} properties={properties} groups={groups} buildings={buildings} />
+      <TopNav owner={owner} properties={properties} groups={groups} buildings={buildings} standalone={standalone} />
       <main className="pt-16 min-w-0">
         {children}
       </main>

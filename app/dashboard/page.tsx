@@ -19,15 +19,26 @@ export default async function DashboardPage() {
   // Edificio (un propietario, N unidades): landing preferido si el owner tiene uno
   if (owner?.id) {
     let firstBuildingId: string | null = null
+    let standalone = false
     try {
       const { listOwnerBuildings } = await import('@/lib/edificio')
       const { isAdminEmail } = await import('@/lib/admin')
-      if (!isAdminEmail(owner.email)) {
-        const buildings = await listOwnerBuildings(serviceSupabase as any, owner, false)
+      const { isStandalone } = await import('@/lib/portal-mode')
+      standalone = isStandalone()
+      // Sitio de un edificio: todos (admin incluido) aterrizan en el edificio.
+      if (standalone || !isAdminEmail(owner.email)) {
+        const buildings = await listOwnerBuildings(serviceSupabase as any, owner, isAdminEmail(owner.email))
         firstBuildingId = buildings[0]?.id ?? null
       }
     } catch { firstBuildingId = null }
     if (firstBuildingId) redirect(`/dashboard/edificio/${firstBuildingId}/overview`)
+    if (standalone) {
+      return (
+        <div className="flex items-center justify-center min-h-screen px-6 text-center">
+          <p className="text-gray-500">Tu cuenta aún no tiene acceso a este edificio. Escríbenos a owners@nok.rent.</p>
+        </div>
+      )
+    }
   }
 
   // If owner has groups, prefer the first group as landing

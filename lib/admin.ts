@@ -5,10 +5,18 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
+import { isStandalone, isTeamEmail } from '@/lib/portal-mode'
+
 const ADMIN_EMAILS = ['se@nok.rent', 'msl@nok.rent']
 
+/**
+ * Admin del portal. En owners.nok.rent: solo la lista fija. En un sitio de
+ * edificio (own96.nok.rent): además cualquier cuenta @nok.rent del equipo.
+ */
 export function isAdminEmail(email: string | null | undefined): boolean {
-  return !!email && ADMIN_EMAILS.includes(email)
+  if (!email) return false
+  if (ADMIN_EMAILS.includes(email.toLowerCase())) return true
+  return isStandalone() && isTeamEmail(email)
 }
 
 /**

@@ -12,6 +12,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { fxToUSD } from '@/lib/wheelhouse'
+import { cronSkippedInStandalone } from '@/lib/portal-mode'
 
 export const maxDuration = 120
 
@@ -35,6 +36,9 @@ async function sendEmail(to: string, subject: string, html: string) {
 const PAUSED = true
 
 export async function GET(req: Request) {
+  // Sitio de un edificio (own96.nok.rent): los crons solo corren en owners.nok.rent
+  const skipped = cronSkippedInStandalone()
+  if (skipped) return skipped
   const { searchParams } = new URL(req.url)
   if (searchParams.get('secret') !== 'nok-sync-2025') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

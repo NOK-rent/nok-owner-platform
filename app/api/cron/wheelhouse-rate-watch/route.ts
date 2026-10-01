@@ -12,6 +12,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { getLastPostedMap, resolveWheelhouseRef } from '@/lib/wheelhouse'
+import { cronSkippedInStandalone } from '@/lib/portal-mode'
 
 export const maxDuration = 300
 
@@ -19,6 +20,9 @@ const HORIZON_DAYS = 180      // only watch nights within this window
 const MIN_DELTA = 1           // ignore sub-$1 noise
 
 export async function GET(req: Request) {
+  // Sitio de un edificio (own96.nok.rent): los crons solo corren en owners.nok.rent
+  const skipped = cronSkippedInStandalone()
+  if (skipped) return skipped
   const { searchParams } = new URL(req.url)
   if (searchParams.get('secret') !== 'nok-sync-2025') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

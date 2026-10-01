@@ -14,6 +14,8 @@ interface TopNavProps {
   properties: Property[]
   groups?: GroupLite[]
   buildings?: BuildingLite[]
+  /** Sitio de un edificio: sin Analíticas (cross-portafolio) */
+  standalone?: boolean
 }
 
 type Locale = 'es' | 'en'
@@ -55,7 +57,7 @@ function ChevronDown() {
   )
 }
 
-export default function TopNav({ owner, properties, groups = [], buildings = [] }: TopNavProps) {
+export default function TopNav({ owner, properties, groups = [], buildings = [], standalone = false }: TopNavProps) {
   const pathname  = usePathname()
   const router    = useRouter()
   const supabase  = createClient()
@@ -120,6 +122,7 @@ export default function TopNav({ owner, properties, groups = [], buildings = [] 
   // Always-visible links
   const analyticsLink = { label: L.analiticas, href: '/dashboard/analytics' }
   const equipoLink = { label: L.equipo, href: '/dashboard/equipo' }
+  const globalLinks = standalone ? [equipoLink] : [analyticsLink, equipoLink]
 
   function isActive(href: string) {
     return pathname === href || pathname.startsWith(href)
@@ -298,7 +301,7 @@ export default function TopNav({ owner, properties, groups = [], buildings = [] 
             )
           })}
           {/* Analytics + Equipo NOK — always visible */}
-          {[analyticsLink, equipoLink].map(link => (
+          {globalLinks.map(link => (
             <Link
               key={link.href}
               href={link.href}
@@ -424,7 +427,7 @@ export default function TopNav({ owner, properties, groups = [], buildings = [] 
             className="md:hidden absolute top-16 left-0 right-0 z-50 py-2"
             style={{ backgroundColor: '#FFFFFF', borderBottom: '1px solid rgba(26,26,26,0.08)', boxShadow: '0 16px 40px rgba(0,0,0,0.12)', maxHeight: 'calc(100vh - 4rem)', overflowY: 'auto' }}
           >
-            {[...navLinks, analyticsLink, equipoLink].map(link => {
+            {[...navLinks, ...globalLinks].map(link => {
               const active = isActive(link.href)
               return (
                 <Link
