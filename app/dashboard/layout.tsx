@@ -58,8 +58,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (standalone) {
     const { loadStandaloneConfig } = await import('@/lib/edificio')
     const cfg = await loadStandaloneConfig(serviceSupabase as any).catch(() => null)
-    const ids = new Set(cfg?.property_ids ?? [])
-    properties = properties.filter((p: any) => ids.has(p.id))
+    // Todas las unidades del edificio (el visor sin login no es dueño en properties.owner_id)
+    const ids = cfg?.property_ids ?? []
+    const { data: units } = ids.length
+      ? await (serviceSupabase as any).from('properties').select('*').in('id', ids).eq('active', true).order('name')
+      : { data: [] }
+    properties = (units ?? []).sort((a: any, b: any) => String(a.name).localeCompare(String(b.name), 'es', { numeric: true }))
     groups = []
     buildings = cfg ? buildings.filter(b => b.id === cfg.id) : []
   }

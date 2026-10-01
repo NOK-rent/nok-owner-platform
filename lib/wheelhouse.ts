@@ -217,7 +217,9 @@ export type WheelhouseChannel = 'guesty' | 'airbnb'
  * non-guesty channels) → properties.guesty_listing_id (channel guesty).
  */
 export function resolveWheelhouseRef(property: { wheelhouse_property_id?: string | null; guesty_listing_id?: string | null }): { id: string; channel: WheelhouseChannel } | null {
-  const override = property.wheelhouse_property_id?.trim()
+  // "guesty:<id>#Wellness203": varias unidades comparten el listing madre de su
+  // columna; el sufijo #… solo existe para respetar el unique de la columna.
+  const override = property.wheelhouse_property_id?.trim().split('#')[0]
   if (override) {
     const [maybeChannel, rest] = override.includes(':') ? override.split(':', 2) : [null, override]
     if (maybeChannel === 'airbnb' || maybeChannel === 'guesty') return { id: rest, channel: maybeChannel }

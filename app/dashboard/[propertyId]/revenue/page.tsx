@@ -233,6 +233,14 @@ export default async function RevenuePage({ params }: Props) {
   const { property, sb } = await loadOwnerProperty(propertyId)
   if (!property) notFound()
 
+  // Unidad que comparte listing madre (wheelhouse_property_id "guesty:<id>#Unidad")
+  let sharedParentName: string | null = null
+  if ((property.wheelhouse_property_id ?? '').includes('#')) {
+    const parentRef = String(property.wheelhouse_property_id).split('#')[0].replace(/^(guesty|airbnb):/, '')
+    const { data: parent } = await sb.from('properties').select('name').eq('guesty_listing_id', parentRef).maybeSingle()
+    sharedParentName = parent?.name?.trim() ?? null
+  }
+
   const locale = await getLocale()
   const EN = locale === 'en'
 
@@ -333,6 +341,11 @@ export default async function RevenuePage({ params }: Props) {
           <p className="text-sm mt-2" style={{ color: 'rgba(26,26,26,0.45)' }}>
             {EN ? 'How we set your rate every day and how your unit compares to its area.' : 'Cómo decidimos tu tarifa cada día y cómo se compara tu unidad con su zona.'}
           </p>
+          {sharedParentName && (
+            <p className="text-xs mt-2 inline-block px-3 py-1.5 rounded-lg" style={{ backgroundColor: 'rgba(131,59,14,0.08)', color: '#833B0E' }}>
+              {EN ? `This unit shares the pricing strategy of its line: ${sharedParentName}.` : `Esta unidad comparte la estrategia de precios de su línea: ${sharedParentName}.`}
+            </p>
+          )}
         </div>
 
         {!snap ? (

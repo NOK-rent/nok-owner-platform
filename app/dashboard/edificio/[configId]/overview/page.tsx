@@ -46,6 +46,26 @@ export default async function EdificioOverviewPage({ params, searchParams }: Pro
     ? Math.max(0, Math.min(100, Math.round((m.thresholdBasisCop / pnl.config.thresholdCop) * 100)))
     : 100
 
+  // Links de publicación por unidad. Las unidades hijas (Wellness 203) heredan los
+  // links de su madre de columna (Wellness 03) cuando no tienen los propios.
+  const propById = Object.fromEntries(properties.map(p => [p.id, p]))
+  const parentByName = Object.fromEntries(properties.map(p => [p.name.trim().replace(/\s+/g, ' '), p]))
+  function parentOf(p: { name: string }) {
+    const mm = p.name.trim().match(/^(.*?)\s+\d(\d)$/)   // "Wellness 203" → "Wellness 03"
+    return mm ? parentByName[`${mm[1]} 0${mm[2]}`] ?? null : null
+  }
+  const CHANNELS: { key: 'airbnb_url' | 'booking_url' | 'marriot_url' | 'nok_booking_engine_url'; label: string; color: string }[] = [
+    { key: 'airbnb_url', label: 'Airbnb', color: '#ef4444' },
+    { key: 'booking_url', label: 'Booking', color: '#0080C6' },
+    { key: 'marriot_url', label: 'Marriott', color: '#4D439E' },
+    { key: 'nok_booking_engine_url', label: 'NOK.rent', color: '#0E6845' },
+  ]
+  function linksFor(id: string) {
+    const p = propById[id]; if (!p) return []
+    const par = parentOf(p)
+    return CHANNELS.map(c => ({ ...c, url: (p[c.key] || par?.[c.key] || null) as string | null })).filter(c => c.url)
+  }
+
   const categoryRows = m
     ? Object.entries(m.costs.byCategory).sort((a, b) => b[1] - a[1]).map(([k, v]) => ({ key: k, meta: categoryMeta(k), usd: v }))
     : []
@@ -214,7 +234,7 @@ export default async function EdificioOverviewPage({ params, searchParams }: Pro
             <div className="rounded-xl p-6 mb-8" style={{ backgroundColor: '#FFFFFF', border: '1px solid rgba(26,26,26,0.08)' }}>
               <h2 className="font-serif text-xl text-[#1A1A1A] mb-4">{t.unitsTitle} — {monthLabel(selected, locale)}</h2>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm min-w-[560px]">
+                <table className="w-full text-sm min-w-[720px]">
                   <thead>
                     <tr className="text-left text-[#1A1A1A]/40 text-xs uppercase tracking-wider">
                       <th className="py-2">{t.colUnit}</th>
@@ -223,6 +243,7 @@ export default async function EdificioOverviewPage({ params, searchParams }: Pro
                       <th className="py-2 text-right">{t.colOcc}</th>
                       <th className="py-2 text-right">{t.colAdr}</th>
                       <th className="py-2 text-right">{t.colNet}</th>
+                      <th className="py-2 text-right">{t.colPublished}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -239,6 +260,14 @@ export default async function EdificioOverviewPage({ params, searchParams }: Pro
                           <td className="py-2 text-right text-[#1A1A1A]/60">{pct(pm?.occupancy ?? 0)}</td>
                           <td className="py-2 text-right text-[#1A1A1A]/60">{pm && pm.nights > 0 ? fmtUSD(pm.adr) : '—'}</td>
                           <td className="py-2 text-right text-[#1A1A1A]">{fmtUSD(pm?.net ?? 0)}</td>
+                          <td className="py-2 text-right whitespace-nowrap">
+                            {linksFor(p.id).map(c => (
+                              <a key={c.key} href={c.url!} target="_blank" rel="noopener noreferrer" title={c.label}
+                                className="inline-block ml-1 px-1.5 py-0.5 rounded text-[10px] font-semibold"
+                                style={{ backgroundColor: `${c.color}1A`, color: c.color, border: `1px solid ${c.color}55` }}>{c.label} ↗</a>
+                            ))}
+                            {linksFor(p.id).length === 0 && <span className="text-xs" style={{ color: 'rgba(26,26,26,0.3)' }}>—</span>}
+                          </td>
                         </tr>
                       )
                     })}
