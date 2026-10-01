@@ -1,7 +1,7 @@
 import { loadOwnerBuilding } from '@/lib/edificio'
 import { normalizeChannel } from '@/lib/building-pnl'
 import { todayYmd, addDays } from '@/lib/ai/building-briefing'
-import BuildingCalendar, { type CalendarCell, type CalendarUnit } from '@/components/edificio/BuildingCalendar'
+import BuildingCalendar, { type CalendarCell, type CalendarUnit, type ReservationDetail } from '@/components/edificio/BuildingCalendar'
 
 interface Props {
   params: Promise<{ configId: string }>
@@ -37,7 +37,7 @@ export default async function EdificioCalendarioPage({ params, searchParams }: P
   const idList = propertyIds.length ? propertyIds : ['00000000-0000-0000-0000-000000000000']
   const [resRes, pcRes, snapRes] = await Promise.all([
     sb.from('reservations')
-      .select('id, property_id, check_in, check_out, nights, guest_name, channel, status, num_guests, is_blocked')
+      .select('id, property_id, check_in, check_out, nights, guest_name, channel, status, num_guests, is_blocked, owner_revenue, accommodation_fare, currency, guesty_created_at, created_at, confirmation_code')
       .in('property_id', idList)
       .not('status', 'in', '(canceled,cancelled,declined,expired,inquiry)')
       .lte('check_in', to).gt('check_out', from).limit(3000),
@@ -54,6 +54,34 @@ export default async function EdificioCalendarioPage({ params, searchParams }: P
     const m = resByUnit.get(r.property_id)!
     let cur = r.check_in < from ? from : r.check_in
     while (cur < r.check_out && cur <= to) { m.set(cur, r); cur = addDays(cur, 1) }
+  }
+  // Detalle de cada reserva para el popover (ingreso, ADR, hace cuánto se reservó)
+  const propName = new Map(properties.map(p => [p.id, p.name]))
+  const nowMs = Date.now()
+  const reservations: Record<string, ReservationDetail> = {}
+  for (const r of (resRes.data ?? []) as any[]) {
+    if (r.is_blocked === true) continue
+    const nights = r.nights && r.nights > 0 ? Number(r.nights) : Math.max(1, Math.round((new Date(r.check_out + 'T00:00:00').getTime() - new Date(r.check_in + 'T00:00:00').getTime()) / 86400000))
+    const revenue = r.owner_revenue != null ? Number(r.owner_revenue) : null
+    const bookedAt: string | null = r.guesty_created_at || r.created_at || null
+    const bookedMs = bookedAt ? new Date(bookedAt).getTime() : null
+    reservations[r.id] = {
+      id: r.id,
+      unit: propName.get(r.property_id) ?? '—',
+      guest: r.guest_name || 'Huésped',
+      channel: normalizeChannel(r.channel),
+      checkIn: r.check_in, checkOut: r.check_out, nights,
+      guests: r.num_guests ?? null,
+      currency: r.currency || 'USD',
+      revenue,
+      gross: r.accommodation_fare != null ? Number(r.accommodation_fare) : null,
+      adr: revenue != null && nights > 0 ? revenue / nights : null,
+      bookedAt,
+      daysAgo: bookedMs ? Math.max(0, Math.floor((nowMs - bookedMs) / 86400000)) : null,
+      leadDays: bookedMs ? Math.max(0, Math.round((new Date(r.check_in + 'T00:00:00').getTime() - bookedMs) / 86400000)) : null,
+      code: r.confirmation_code ?? null,
+      status: r.status,
+    }
   }
   const priceByUnit = new Map<string, Map<string, number>>()
   const blockedByUnit = new Map<string, Set<string>>()
@@ -93,7 +121,7 @@ export default async function EdificioCalendarioPage({ params, searchParams }: P
         booked++
         if (p.active) bookedPerDay[i]++
         const guest = r.guest_name || 'Huésped'
-        return { k: 'r', ch: r.channel ?? null, ini: initials(r.guest_name), s, e, t: `${guest} · ${normalizeChannel(r.channel)} · ${fmtDate(r.check_in)} → ${fmtDate(r.check_out)}${r.nights ? ` · ${r.nights} noches` : ''}` }
+        return { k: 'r', rid: r.id, ch: r.channel ?? null, ini: initials(r.guest_name), s, e, t: `${guest} · ${normalizeChannel(r.channel)} · ${fmtDate(r.check_in)} → ${fmtDate(r.check_out)}${r.nights ? ` · ${r.nights} noches` : ''}` }
       }
       if (bl?.has(d)) return { k: 'b', t: 'Bloqueado en el calendario' }
       return { k: 'f', p: pm?.get(d) ?? null }
@@ -114,6 +142,7 @@ export default async function EdificioCalendarioPage({ params, searchParams }: P
         month={month}
         days={days}
         units={units}
+        reservations={reservations}
         dailyOccupancy={dailyOccupancy}
         currency={currency}
         today={today}

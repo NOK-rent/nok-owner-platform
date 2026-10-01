@@ -2,12 +2,34 @@
 
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 
 /** Celda ya resuelta en el servidor: una por unidad × día. */
 export type CalendarCell =
-  | { k: 'r'; ch: string | null; ini: string; t: string; s: boolean; e: boolean }   // reserva (s/e: primer/último día del tramo)
+  | { k: 'r'; rid: string; ch: string | null; ini: string; t: string; s: boolean; e: boolean }   // reserva (s/e: primer/último día del tramo)
   | { k: 'b'; t: string }                                                            // bloqueo del propietario / calendario
   | { k: 'f'; p: number | null }                                                     // libre (p: tarifa publicada)
+
+/** Detalle de una reserva para el popover (resuelto en el servidor). */
+export interface ReservationDetail {
+  id: string
+  unit: string
+  guest: string
+  channel: string
+  checkIn: string
+  checkOut: string
+  nights: number
+  guests: number | null
+  currency: string
+  revenue: number | null     // owner_revenue (neto de canal)
+  gross: number | null       // accommodation_fare
+  adr: number | null         // revenue / nights
+  bookedAt: string | null    // ISO
+  daysAgo: number | null     // hace cuánto se reservó
+  leadDays: number | null    // anticipación: días entre reserva y check-in
+  code: string | null
+  status: string
+}
 
 export interface CalendarUnit {
   id: string
@@ -23,6 +45,7 @@ interface Props {
   month: number
   days: string[]            // YYYY-MM-DD del mes
   units: CalendarUnit[]
+  reservations?: Record<string, ReservationDetail>
   dailyOccupancy: number[]  // 0–100 por día (unidades reservadas / activas)
   currency: string
   today: string
@@ -61,8 +84,15 @@ function occColor(pct: number) {
   return '#F20022'
 }
 
-export default function BuildingCalendar({ configId, year, month, days, units, dailyOccupancy, currency, today }: Props) {
+export default function BuildingCalendar({ configId, year, month, days, units, reservations = {}, dailyOccupancy, currency, today }: Props) {
   const router = useRouter()
+  const [selected, setSelected] = useState<ReservationDetail | null>(null)
+  useEffect(() => {
+    if (!selected) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setSelected(null) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selected])
 
   function navigate(delta: number) {
     let m = month + delta, y = year
@@ -125,7 +155,9 @@ export default function BuildingCalendar({ configId, year, month, days, units, d
                       <td key={d} className="p-0" style={{ borderBottom: '1px solid rgba(26,26,26,0.05)' }}>
                         <div
                           title={c.t}
-                          className="h-8 mx-px flex items-center justify-center font-semibold overflow-hidden"
+                          role="button"
+                          onClick={() => { const r = reservations[c.rid]; if (r) setSelected(r) }}
+                          className="h-8 mx-px flex items-center justify-center font-semibold overflow-hidden cursor-pointer hover:brightness-95"
                           style={{
                             backgroundColor: cs.bg,
                             color: cs.text,
@@ -197,6 +229,72 @@ export default function BuildingCalendar({ configId, year, month, days, units, d
           <span className="text-xs" style={{ color: 'rgba(26,26,26,0.45)' }}>Tarifa publicada (libre)</span>
         </div>
       </div>
+      {/* Detalle de reserva */}
+      {selected && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style={{ backgroundColor: 'rgba(26,26,26,0.35)' }} onClick={() => setSelected(null)}>
+          <div className="w-full max-w-md rounded-2xl p-6" style={{ backgroundColor: '#FFFFFF', boxShadow: '0 24px 64px rgba(0,0,0,0.18)' }} onClick={e => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <p className="text-[11px] uppercase tracking-widest" style={{ color: 'rgba(26,26,26,0.4)' }}>{selected.unit}</p>
+                <h3 className="font-serif text-2xl font-light text-[#1A1A1A] leading-tight">{selected.guest}</h3>
+                <p className="text-xs mt-1" style={{ color: getChannelStyle(selected.channel).text }}>{selected.channel}{selected.code ? ` · ${selected.code}` : ''}</p>
+              </div>
+              <button onClick={() => setSelected(null)} className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer" style={{ border: '1px solid rgba(26,26,26,0.1)', color: 'rgba(26,26,26,0.5)' }} aria-label="Cerrar">×</button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              <Stat label="Ingreso neto" value={fmtMoney(selected.revenue, selected.currency)} strong />
+              <Stat label="ADR" value={fmtMoney(selected.adr, selected.currency)} />
+              <Stat label="Noches" value={String(selected.nights)} />
+            </div>
+
+            <dl className="text-sm space-y-2">
+              <Row k="Estancia" v={`${fmtLong(selected.checkIn)} → ${fmtLong(selected.checkOut)}`} />
+              {selected.guests != null && <Row k="Huéspedes" v={String(selected.guests)} />}
+              {selected.gross != null && <Row k="Tarifa cobrada al huésped" v={fmtMoney(selected.gross, selected.currency)} />}
+              <Row k="Reservada" v={selected.bookedAt ? `${fmtLong(selected.bookedAt.slice(0, 10))} · ${agoLabel(selected.daysAgo)}` : '—'} />
+              {selected.leadDays != null && <Row k="Anticipación" v={selected.leadDays === 0 ? 'El mismo día del check-in' : `${selected.leadDays} días antes del check-in`} />}
+            </dl>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function fmtMoney(n: number | null, currency: string) {
+  if (n == null || !Number.isFinite(n)) return '—'
+  const cur = currency === 'COP' ? 'COP' : currency === 'DOP' ? 'DOP' : 'USD'
+  return new Intl.NumberFormat(cur === 'COP' ? 'es-CO' : 'en-US', { style: 'currency', currency: cur, maximumFractionDigits: 0 }).format(n)
+}
+
+function fmtLong(d: string) {
+  return new Date(d + 'T00:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function agoLabel(days: number | null) {
+  if (days == null) return ''
+  if (days === 0) return 'hoy'
+  if (days === 1) return 'hace 1 día'
+  if (days < 30) return `hace ${days} días`
+  const months = Math.floor(days / 30)
+  return months === 1 ? 'hace 1 mes' : `hace ${months} meses`
+}
+
+function Stat({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+  return (
+    <div className="rounded-lg px-3 py-2" style={{ border: '1px solid rgba(26,26,26,0.08)' }}>
+      <div className="text-base font-semibold" style={{ color: strong ? '#0E6845' : '#1A1A1A' }}>{value}</div>
+      <div className="text-[10px] uppercase tracking-wider" style={{ color: 'rgba(26,26,26,0.4)' }}>{label}</div>
+    </div>
+  )
+}
+
+function Row({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="flex justify-between gap-4">
+      <dt style={{ color: 'rgba(26,26,26,0.5)' }}>{k}</dt>
+      <dd className="text-right text-[#1A1A1A]">{v}</dd>
     </div>
   )
 }
