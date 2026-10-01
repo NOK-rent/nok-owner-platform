@@ -151,8 +151,18 @@ export default async function EdificioOverviewPage({ params, searchParams }: Pro
                       </div>
                     </div>
                   )}
+                  {pnl.config.thresholdCop > 0 && (
+                    <p className="text-[11px] mt-3 leading-relaxed" style={{ color: 'rgba(26,26,26,0.55)' }}>
+                      {tpl(t.thresholdFx, {
+                        usd: fmtUSD(pnl.config.thresholdBasis === 'gross' ? m.gross : m.noi),
+                        trm: Math.round(m.trm).toLocaleString('es-CO'),
+                        cop: fmtCOP(m.thresholdBasisCop),
+                        month: monthLabel(selected, locale),
+                      })}
+                    </p>
+                  )}
                   {pnl.config.thresholdCop > 0 && pnl.config.commissionRate === 0 && (
-                    <p className="text-[11px] mt-3" style={{ color: 'rgba(26,26,26,0.4)' }}>{t.thresholdRatePending}</p>
+                    <p className="text-[11px] mt-2" style={{ color: 'rgba(26,26,26,0.4)' }}>{t.thresholdRatePending}</p>
                   )}
                 </div>
 
